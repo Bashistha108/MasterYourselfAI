@@ -26,109 +26,111 @@ class _ArchivedGoalsScreenState extends State<ArchivedGoalsScreen> {
         backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
       ),
-      body: Consumer<AppState>(
-        builder: (context, appState, child) {
-          if (appState.isLoading) {
-            return Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        child: Consumer<AppState>(
+          builder: (context, appState, child) {
+            if (appState.isLoading) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          if (appState.archivedWeeklyGoals.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.archive_outlined,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No archived goals',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
+            if (appState.archivedWeeklyGoals.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.archive_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Archived goals will appear here',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
+                    SizedBox(height: 16),
+                    Text(
+                      'No archived goals',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: appState.archivedWeeklyGoals.length,
-            itemBuilder: (context, index) {
-              final goal = appState.archivedWeeklyGoals[index];
-              return Card(
-                margin: EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(
-                    goal.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.lineThrough,
-                      color: Colors.grey[600],
+                    SizedBox(height: 8),
+                    Text(
+                      'Archived goals will appear here',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
                     ),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (goal.description != null && goal.description!.isNotEmpty)
-                        Text(
-                          goal.description!,
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Week: ${_formatDate(goal.weekStartDate)} - ${_formatDate(goal.weekEndDate)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                      Text(
-                        'Archived on: ${_formatDate(goal.updatedAt)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.restore, color: Colors.blue),
-                        onPressed: () => _showRestoreConfirmation(goal),
-                        tooltip: 'Restore Goal',
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete_forever, color: Colors.red),
-                        onPressed: () => _showPermanentDeleteConfirmation(goal),
-                        tooltip: 'Delete Permanently',
-                      ),
-                    ],
-                  ),
-                  onTap: () => _showArchivedGoalDetails(goal),
+                  ],
                 ),
               );
-            },
-          );
-        },
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: appState.archivedWeeklyGoals.length,
+              itemBuilder: (context, index) {
+                final goal = appState.archivedWeeklyGoals[index];
+                return Card(
+                  margin: EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    title: Text(
+                      goal.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.lineThrough,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (goal.description != null && goal.description!.isNotEmpty)
+                          Text(
+                            goal.description!,
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Week: ${_formatDate(goal.weekStartDate)} - ${_formatDate(goal.weekEndDate)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        Text(
+                          'Archived on: ${_formatDate(goal.updatedAt)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.restore, color: Colors.blue),
+                          onPressed: () => _showRestoreConfirmation(goal),
+                          tooltip: 'Restore Goal',
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete_forever, color: Colors.red),
+                          onPressed: () => _showPermanentDeleteConfirmation(goal),
+                          tooltip: 'Delete Permanently',
+                        ),
+                      ],
+                    ),
+                    onTap: () => _showArchivedGoalDetails(goal),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

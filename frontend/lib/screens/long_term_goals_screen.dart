@@ -60,100 +60,253 @@ class _LongTermGoalsScreenState extends State<LongTermGoalsScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text('Add Long-term Goal'),
-            content: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Goal Title',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a goal title';
-                      }
-                      return null;
-                    },
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: 8,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              child: Container(
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.indigo.shade50,
+                      Colors.white,
+                    ],
                   ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: 'Description (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.indigo.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              color: Colors.indigo,
+                              size: 28,
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Add Long-term Goal',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      
+                      // Form
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _titleController,
+                              decoration: InputDecoration(
+                                labelText: 'Goal Title',
+                                hintText: 'Enter your goal title...',
+                                prefixIcon: Icon(Icons.flag, color: Colors.indigo),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.indigo, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter a goal title';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 20),
+                            TextFormField(
+                              controller: _descriptionController,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: 'Description (optional)',
+                                hintText: 'Add more details about your goal...',
+                                prefixIcon: Icon(Icons.description, color: Colors.indigo),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.indigo, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                            ),
+                            SizedBox(height: 20),
+                            ListTile(
+                              title: Text('Start Date (optional)'),
+                              subtitle: Text(_selectedStartDate == null 
+                                ? 'No date set' 
+                                : '${_selectedStartDate!.day}/${_selectedStartDate!.month}/${_selectedStartDate!.year}'),
+                              trailing: Icon(Icons.calendar_today),
+                              onTap: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: _selectedStartDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now().add(Duration(days: 365 * 5)),
+                                );
+                                if (date != null) {
+                                  setDialogState(() {
+                                    _selectedStartDate = date;
+                                  });
+                                }
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            ListTile(
+                              title: Text('Target Date (optional)'),
+                              subtitle: Text(_selectedTargetDate == null 
+                                ? 'No date set' 
+                                : '${_selectedTargetDate!.day}/${_selectedTargetDate!.month}/${_selectedTargetDate!.year}'),
+                              trailing: Icon(Icons.calendar_today),
+                              onTap: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: _selectedTargetDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime.now().add(Duration(days: 365 * 5)),
+                                );
+                                if (date != null) {
+                                  setDialogState(() {
+                                    _selectedTargetDate = date;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      
+                      // Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.grey.shade300),
+                                ),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (_formKey.currentState!.validate()) {
+                                  try {
+                                    await context.read<AppState>().createLongTermGoal(
+                                      _titleController.text,
+                                      _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                                      _selectedStartDate,
+                                      _selectedTargetDate,
+                                    );
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Goal added successfully!'),
+                                        backgroundColor: Colors.green,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    if (Navigator.canPop(context)) {
+                                      Navigator.pop(context);
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to add goal: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: Text(
+                                'Add Goal',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text('Start Date (optional)'),
-                    subtitle: Text(_selectedStartDate == null 
-                      ? 'No date set' 
-                      : '${_selectedStartDate!.day}/${_selectedStartDate!.month}/${_selectedStartDate!.year}'),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedStartDate ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now().add(Duration(days: 365 * 5)),
-                      );
-                      if (date != null) {
-                        setDialogState(() {
-                          _selectedStartDate = date;
-                        });
-                      }
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  ListTile(
-                    title: Text('Target Date (optional)'),
-                    subtitle: Text(_selectedTargetDate == null 
-                      ? 'No date set' 
-                      : '${_selectedTargetDate!.day}/${_selectedTargetDate!.month}/${_selectedTargetDate!.year}'),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedTargetDate ?? DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now().add(Duration(days: 365 * 5)),
-                      );
-                      if (date != null) {
-                        setDialogState(() {
-                          _selectedTargetDate = date;
-                        });
-                      }
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    await context.read<AppState>().createLongTermGoal(
-                      _titleController.text,
-                      _descriptionController.text.isEmpty ? null : _descriptionController.text,
-                      _selectedStartDate,
-                      _selectedTargetDate,
-                    );
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text('Add Goal'),
-              ),
-            ],
           );
         },
       ),
@@ -808,152 +961,153 @@ class _LongTermGoalsScreenState extends State<LongTermGoalsScreen> {
           ),
         ],
       ),
-      body: Consumer<AppState>(
-        builder: (context, appState, child) {
-          return Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Long-term Goals (${appState.longTermGoals.length}/3)',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Consumer<AppState>(
+          builder: (context, appState, child) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 32), // Extra bottom padding
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Long-term Goals (${appState.longTermGoals.length}/3)',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 16),
-                Expanded(
-                  child: appState.longTermGoals.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.trending_up_outlined, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text(
-                                'No long-term goals yet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Add your first goal to build your best self',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: appState.longTermGoals.length,
-                          itemBuilder: (context, index) {
-                            final goal = appState.longTermGoals[index];
-                            return Card(
-                              margin: EdgeInsets.only(bottom: 12),
-                              child: ExpansionTile(
-                                title: Text(
-                                  goal.title,
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: appState.longTermGoals.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.trending_up_outlined, size: 64, color: Colors.grey),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No long-term goals yet',
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[600],
                                   ),
                                 ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Status indicator
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: goal.isCompleted 
-                                            ? Colors.green.withOpacity(0.1)
-                                            : goal.isPaused 
-                                                ? Colors.orange.withOpacity(0.1)
-                                                : Colors.blue.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        goal.status.toUpperCase(),
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                SizedBox(height: 8),
+                                Text(
+                                  'Add your first goal to build your best self',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: appState.longTermGoals.length,
+                            itemBuilder: (context, index) {
+                              final goal = appState.longTermGoals[index];
+                              return Card(
+                                margin: EdgeInsets.only(bottom: 12),
+                                child: ExpansionTile(
+                                  title: Text(
+                                    goal.title,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Status indicator
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
                                           color: goal.isCompleted 
-                                              ? Colors.green
+                                              ? Colors.green.withOpacity(0.1)
                                               : goal.isPaused 
-                                                  ? Colors.orange
-                                                  : Colors.blue,
-                                          fontWeight: FontWeight.w600,
+                                                  ? Colors.orange.withOpacity(0.1)
+                                                  : Colors.blue.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          goal.status.toUpperCase(),
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: goal.isCompleted 
+                                                ? Colors.green
+                                                : goal.isPaused 
+                                                    ? Colors.orange
+                                                    : Colors.blue,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    // Start date
-                                    if (goal.startDate != null)
-                                      Text(
-                                        'Start: ${goal.startDate!.day.toString().padLeft(2, '0')}/${goal.startDate!.month.toString().padLeft(2, '0')}/${goal.startDate!.year}',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey[600],
+                                      SizedBox(height: 4),
+                                      // Start date
+                                      if (goal.startDate != null)
+                                        Text(
+                                          'Start: ${goal.startDate!.day.toString().padLeft(2, '0')}/${goal.startDate!.month.toString().padLeft(2, '0')}/${goal.startDate!.year}',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Colors.grey[600],
+                                          ),
                                         ),
-                                      ),
-                                    // Target date
-                                    if (goal.targetDate != null)
-                                      Text(
-                                        'Target: ${goal.targetDate!.day.toString().padLeft(2, '0')}/${goal.targetDate!.month.toString().padLeft(2, '0')}/${goal.targetDate!.year}',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey[600],
+                                      // Target date
+                                      if (goal.targetDate != null)
+                                        Text(
+                                          'Target: ${goal.targetDate!.day.toString().padLeft(2, '0')}/${goal.targetDate!.month.toString().padLeft(2, '0')}/${goal.targetDate!.year}',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Colors.grey[600],
+                                          ),
                                         ),
-                                      ),
-                                    // Time remaining
-                                    if (goal.timeRemainingString != null)
-                                      Text(
-                                        goal.timeRemainingString!,
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: goal.daysRemaining! <= 7 ? Colors.red : Colors.grey[600],
-                                          fontWeight: goal.daysRemaining! <= 7 ? FontWeight.w600 : FontWeight.normal,
+                                      // Time remaining
+                                      if (goal.timeRemainingString != null)
+                                        Text(
+                                          goal.timeRemainingString!,
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: goal.daysRemaining! <= 7 ? Colors.red : Colors.grey[600],
+                                            fontWeight: goal.daysRemaining! <= 7 ? FontWeight.w600 : FontWeight.normal,
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.note_add, size: 20, color: Colors.blue),
-                                      onPressed: () {
-                                        setState(() {
-                                          _showNoteField[goal.id] = !(_showNoteField[goal.id] ?? false);
-                                          if (_showNoteField[goal.id] == true) {
-                                            _noteControllers[goal.id] = TextEditingController();
-                                          } else {
-                                            _noteControllers[goal.id]?.dispose();
-                                            _noteControllers.remove(goal.id);
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    if (!goal.isCompleted)
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
                                       IconButton(
-                                        icon: Icon(Icons.check_circle_outline, size: 20, color: Colors.green),
-                                        onPressed: () => _showCompleteConfirmation(goal),
+                                        icon: Icon(Icons.note_add, size: 20, color: Colors.blue),
+                                        onPressed: () {
+                                          setState(() {
+                                            _showNoteField[goal.id] = !(_showNoteField[goal.id] ?? false);
+                                            if (_showNoteField[goal.id] == true) {
+                                              _noteControllers[goal.id] = TextEditingController();
+                                            } else {
+                                              _noteControllers[goal.id]?.dispose();
+                                              _noteControllers.remove(goal.id);
+                                            }
+                                          });
+                                        },
                                       ),
-                                    IconButton(
-                                      icon: Icon(Icons.edit, size: 20),
-                                      onPressed: () => _showEditGoalDialog(goal),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.delete, size: 20, color: Colors.red),
-                                      onPressed: () => _showDeleteConfirmation(goal),
-                                    ),
-                                  ],
-                                ),
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Progress bar
-                                        Container(
-                                          margin: EdgeInsets.only(bottom: 16),
+                                      if (!goal.isCompleted)
+                                        IconButton(
+                                          icon: Icon(Icons.check_circle_outline, size: 20, color: Colors.green),
+                                          onPressed: () => _showCompleteConfirmation(goal),
+                                        ),
+                                      IconButton(
+                                        icon: Icon(Icons.edit, size: 20),
+                                        onPressed: () => _showEditGoalDialog(goal),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.delete, size: 20, color: Colors.red),
+                                        onPressed: () => _showDeleteConfirmation(goal),
+                                      ),
+                                    ],
+                                  ),
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Progress bar
+                                          Container(
+                                            margin: EdgeInsets.only(bottom: 16),
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
@@ -1002,40 +1156,9 @@ class _LongTermGoalsScreenState extends State<LongTermGoalsScreen> {
                                                 ),
                                               ],
                                             ),
-                                        ),
-                                        
-                                        // Weekly Intensity Chooser
-                                        Container(
-                                          margin: EdgeInsets.only(bottom: 16),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    'This Week\'s Intensity',
-                                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    'Resets weekly',
-                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                      color: Colors.grey[500],
-                                                      fontStyle: FontStyle.italic,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              SizedBox(height: 8),
-                                              _buildIntensityChooser(context, goal, appState),
-                                            ],
                                           ),
-                                        ),
-                                        
-                                        // Inline Note Field
-                                        if (_showNoteField[goal.id] == true)
+                                          
+                                          // Weekly Intensity Chooser
                                           Container(
                                             margin: EdgeInsets.only(bottom: 16),
                                             child: Column(
@@ -1045,152 +1168,183 @@ class _LongTermGoalsScreenState extends State<LongTermGoalsScreen> {
                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                   children: [
                                                     Text(
-                                                      _editingNoteId != null ? 'Edit Note' : 'Add Note',
+                                                      'This Week\'s Intensity',
                                                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                     ),
-                                                    Row(
-                                                      children: [
-                                                        IconButton(
-                                                          icon: Icon(Icons.check, color: Colors.green),
-                                                          onPressed: () async {
-                                                            final noteText = _noteControllers[goal.id]?.text ?? '';
-                                                            if (noteText.isNotEmpty) {
-                                                              final appState = context.read<AppState>();
-                                                              
-                                                              if (_editingNoteId != null) {
-                                                                // Update existing note
-                                                                await appState.updateGoalNote(_editingNoteId!, content: noteText);
-                                                              } else {
-                                                                // Create new note
-                                                                final existingNotes = appState.getNotesForGoal(goal.id);
-                                                                final nextNumber = existingNotes.length + 1;
-                                                                final autoTitle = 'Note $nextNumber';
-                                                                await appState.createGoalNote(goal.id, autoTitle, noteText);
+                                                    Text(
+                                                      'Resets weekly',
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                        color: Colors.grey[500],
+                                                        fontStyle: FontStyle.italic,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                SizedBox(height: 8),
+                                                _buildIntensityChooser(context, goal, appState),
+                                              ],
+                                            ),
+                                          ),
+                                          
+                                          // Inline Note Field
+                                          if (_showNoteField[goal.id] == true)
+                                            Container(
+                                              margin: EdgeInsets.only(bottom: 16),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        _editingNoteId != null ? 'Edit Note' : 'Add Note',
+                                                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      Row(
+                                                        children: [
+                                                          IconButton(
+                                                            icon: Icon(Icons.check, color: Colors.green),
+                                                            onPressed: () async {
+                                                              final noteText = _noteControllers[goal.id]?.text ?? '';
+                                                              if (noteText.isNotEmpty) {
+                                                                final appState = context.read<AppState>();
+                                                                
+                                                                if (_editingNoteId != null) {
+                                                                  // Update existing note
+                                                                  await appState.updateGoalNote(_editingNoteId!, content: noteText);
+                                                                } else {
+                                                                  // Create new note
+                                                                  final existingNotes = appState.getNotesForGoal(goal.id);
+                                                                  final nextNumber = existingNotes.length + 1;
+                                                                  final autoTitle = 'Note $nextNumber';
+                                                                  await appState.createGoalNote(goal.id, autoTitle, noteText);
+                                                                }
+                                                                
+                                                                await appState.loadGoalNotes(goal.id);
+                                                                
+                                                                setState(() {
+                                                                  _noteControllers[goal.id]?.clear();
+                                                                  _showNoteField[goal.id] = false;
+                                                                  _editingNoteId = null;
+                                                                });
                                                               }
-                                                              
-                                                              await appState.loadGoalNotes(goal.id);
-                                                              
+                                                            },
+                                                          ),
+                                                          IconButton(
+                                                            icon: Icon(Icons.close, color: Colors.red),
+                                                            onPressed: () {
                                                               setState(() {
                                                                 _noteControllers[goal.id]?.clear();
                                                                 _showNoteField[goal.id] = false;
                                                                 _editingNoteId = null;
                                                               });
-                                                            }
-                                                          },
-                                                        ),
-                                                        IconButton(
-                                                          icon: Icon(Icons.close, color: Colors.red),
-                                                          onPressed: () {
-                                                            setState(() {
-                                                              _noteControllers[goal.id]?.clear();
-                                                              _showNoteField[goal.id] = false;
-                                                              _editingNoteId = null;
-                                                            });
-                                                          },
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                                SizedBox(height: 8),
-                                                TextField(
-                                                  controller: _noteControllers[goal.id],
-                                                  decoration: InputDecoration(
-                                                    hintText: 'Write your note here...',
-                                                    border: OutlineInputBorder(),
-                                                  ),
-                                                  maxLines: 3,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        
-                                        // Display Existing Notes
-                                        Consumer<AppState>(
-                                          builder: (context, appState, child) {
-                                            final notes = appState.getNotesForGoal(goal.id);
-                                            if (notes.isNotEmpty) {
-                                              return Container(
-                                                margin: EdgeInsets.only(bottom: 16),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Notes (${notes.length})',
-                                                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                        fontWeight: FontWeight.w600,
+                                                            },
+                                                          ),
+                                                        ],
                                                       ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 8),
+                                                  TextField(
+                                                    controller: _noteControllers[goal.id],
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Write your note here...',
+                                                      border: OutlineInputBorder(),
                                                     ),
-                                                    SizedBox(height: 8),
-                                                    ...notes.map((note) => Card(
-                                                      margin: EdgeInsets.only(bottom: 4),
-                                                      child: ListTile(
-                                                        title: Text(
-                                                          note.title,
-                                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                                        ),
-                                                        subtitle: Text(note.content),
-                                                        trailing: Row(
-                                                          mainAxisSize: MainAxisSize.min,
-                                                          children: [
-                                                            IconButton(
-                                                              icon: Icon(Icons.edit, size: 16),
-                                                              onPressed: () {
-                                                                setState(() {
-                                                                  _showNoteField[goal.id] = true;
-                                                                  _noteControllers[goal.id] = TextEditingController(text: note.content);
-                                                                  // Store the note being edited
-                                                                  _editingNoteId = note.id;
-                                                                });
-                                                              },
-                                                            ),
-                                                            IconButton(
-                                                              icon: Icon(Icons.delete, size: 16, color: Colors.red),
-                                                              onPressed: () => _showDeleteNoteConfirmation(note),
-                                                            ),
-                                                          ],
+                                                    maxLines: 3,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          
+                                          // Display Existing Notes
+                                          Consumer<AppState>(
+                                            builder: (context, appState, child) {
+                                              final notes = appState.getNotesForGoal(goal.id);
+                                              if (notes.isNotEmpty) {
+                                                return Container(
+                                                  margin: EdgeInsets.only(bottom: 16),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        'Notes (${notes.length})',
+                                                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                          fontWeight: FontWeight.w600,
                                                         ),
                                                       ),
-                                                    )).toList(),
-                                                  ],
-                                                ),
-                                              );
-                                            }
-                                            return SizedBox.shrink();
-                                          },
-                                        ),
-                                        
-                                        // Description
-                                        if (goal.description != null && goal.description!.isNotEmpty)
-                                          Container(
-                                            width: double.infinity,
-                                            padding: EdgeInsets.all(12),
-                                            margin: EdgeInsets.only(bottom: 16),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade50,
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(color: Colors.grey.shade200),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Description:',
-                                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.grey.shade700,
+                                                      SizedBox(height: 8),
+                                                      ...notes.map((note) => Card(
+                                                        margin: EdgeInsets.only(bottom: 4),
+                                                        child: ListTile(
+                                                          title: Text(
+                                                            note.title,
+                                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                          ),
+                                                          subtitle: Text(note.content),
+                                                          trailing: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              IconButton(
+                                                                icon: Icon(Icons.edit, size: 16),
+                                                                onPressed: () {
+                                                                  setState(() {
+                                                                    _showNoteField[goal.id] = true;
+                                                                    _noteControllers[goal.id] = TextEditingController(text: note.content);
+                                                                    // Store the note being edited
+                                                                    _editingNoteId = note.id;
+                                                                  });
+                                                                },
+                                                              ),
+                                                              IconButton(
+                                                                icon: Icon(Icons.delete, size: 16, color: Colors.red),
+                                                                onPressed: () => _showDeleteNoteConfirmation(note),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      )).toList(),
+                                                    ],
                                                   ),
-                                                ),
-                                                SizedBox(height: 4),
-                                                Text(
-                                                  goal.description!,
-                                                  style: Theme.of(context).textTheme.bodyMedium,
-                                                ),
-                                              ],
-                                            ),
+                                                );
+                                              }
+                                              return SizedBox.shrink();
+                                            },
                                           ),
+                                          
+                                          // Description
+                                          if (goal.description != null && goal.description!.isNotEmpty)
+                                            Container(
+                                              width: double.infinity,
+                                              padding: EdgeInsets.all(12),
+                                              margin: EdgeInsets.only(bottom: 16),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey.shade50,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: Colors.grey.shade200),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Description:',
+                                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.grey.shade700,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 4),
+                                                  Text(
+                                                    goal.description!,
+                                                    style: Theme.of(context).textTheme.bodyMedium,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                       ],
                                     ),
                                   ),
@@ -1199,25 +1353,26 @@ class _LongTermGoalsScreenState extends State<LongTermGoalsScreen> {
                             );
                           },
                         ),
-                ),
-                SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: appState.longTermGoals.length >= 3
-                        ? null
-                        : _showAddGoalDialog,
-                    icon: Icon(Icons.add),
-                    label: Text('Create New Goal'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: appState.longTermGoals.length >= 3
+                          ? null
+                          : _showAddGoalDialog,
+                      icon: Icon(Icons.add),
+                      label: Text('Create New Goal'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

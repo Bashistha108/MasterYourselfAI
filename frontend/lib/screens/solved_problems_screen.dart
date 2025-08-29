@@ -28,122 +28,124 @@ class _SolvedProblemsScreenState extends State<SolvedProblemsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Consumer<AppState>(
-        builder: (context, appState, child) {
-          return Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Solved Problems (${appState.solvedProblems.length})',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Consumer<AppState>(
+          builder: (context, appState, child) {
+            return Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Solved Problems (${appState.solvedProblems.length})',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 16),
-                Expanded(
-                  child: appState.solvedProblems.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle_outline, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text(
-                                'No solved problems yet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Solve some problems to see them here',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: appState.solvedProblems.length,
-                          itemBuilder: (context, index) {
-                            final problem = appState.solvedProblems[index];
-                            return Card(
-                              margin: EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                leading: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 20,
-                                  ),
-                                ),
-                                title: Text(
-                                  problem.title,
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: appState.solvedProblems.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle_outline, size: 64, color: Colors.grey),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No solved problems yet',
                                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[600],
                                   ),
                                 ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (problem.description != null && problem.description!.isNotEmpty)
-                                      Text(
-                                        problem.description!,
-                                        style: Theme.of(context).textTheme.bodyMedium,
-                                      ),
-                                    SizedBox(height: 4),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        (problem.category ?? 'general').toUpperCase(),
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.w500,
+                                SizedBox(height: 8),
+                                Text(
+                                  'Solve some problems to see them here',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: appState.solvedProblems.length,
+                            itemBuilder: (context, index) {
+                              final problem = appState.solvedProblems[index];
+                              return Card(
+                                margin: EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  leading: Container(
+                                    padding: EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    problem.title,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (problem.description != null && problem.description!.isNotEmpty)
+                                        Text(
+                                          problem.description!,
+                                          style: Theme.of(context).textTheme.bodyMedium,
+                                        ),
+                                      SizedBox(height: 4),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          (problem.category ?? 'general').toUpperCase(),
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Colors.blue,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(Icons.restore, size: 20, color: Colors.blue),
+                                        onPressed: () => _showRestoreConfirmation(problem),
+                                        tooltip: 'Restore Problem',
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.delete_forever, size: 20, color: Colors.red),
+                                        onPressed: () => _showPermanentDeleteConfirmation(problem),
+                                        tooltip: 'Delete Permanently',
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () {
+                                    _showSolvedProblemDetails(problem);
+                                  },
                                 ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.restore, size: 20, color: Colors.blue),
-                                      onPressed: () => _showRestoreConfirmation(problem),
-                                      tooltip: 'Restore Problem',
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.delete_forever, size: 20, color: Colors.red),
-                                      onPressed: () => _showPermanentDeleteConfirmation(problem),
-                                      tooltip: 'Delete Permanently',
-                                    ),
-                                  ],
-                                ),
-                                onTap: () {
-                                  _showSolvedProblemDetails(problem);
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
