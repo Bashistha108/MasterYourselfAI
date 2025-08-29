@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1004680248723",
+    "project_id": "masteryourselfai-50d2c",
+    "storage_bucket": "masteryourselfai-50d2c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1004680248723:android:6a85ed282cb3426dd5fc66",
+        "android_client_info": {
+          "package_name": "com.masteryourself.ai.master_yourself_ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1004680248723-d8u73vl1fd6pioj0a5gevj68mg2g9r2r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcstQeICnVar_u9jIc-MNz_oDjV6DFZzw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1004680248723-d8u73vl1fd6pioj0a5gevj68mg2g9r2r.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1004680248723-963216jjv0kh1oskm911uis35q5sc8h2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.masteryourself.ai.masterYourselfAi"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

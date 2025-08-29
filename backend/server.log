@@ -1,0 +1,49 @@
+nohup: ignoring input
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.103:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 315-559-245
+/home/bashistha/Desktop/master_yourself_ai/backend/venv/lib/python3.12/site-packages/flask_sqlalchemy/model.py:22: SAWarning: relationship 'Challenges.long_term_goal' will copy column long_term_goals.id to column challenges.goal_id, which conflicts with relationship(s): 'Challenges.weekly_goal' (copies weekly_goals.id to challenges.goal_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps="weekly_goal"' to the 'Challenges.long_term_goal' relationship. (Background on this warning at: https://sqlalche.me/e/20/qzyx) (This warning originated from the `configure_mappers()` process, which was invoked automatically in response to a user-initiated operation.)
+  return cls.query_class(
+/home/bashistha/Desktop/master_yourself_ai/backend/venv/lib/python3.12/site-packages/flask_sqlalchemy/model.py:22: SAWarning: relationship 'GoalRatings.long_term_goal' will copy column long_term_goals.id to column goal_ratings.goal_id, which conflicts with relationship(s): 'GoalRatings.weekly_goal' (copies weekly_goals.id to goal_ratings.goal_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps="weekly_goal"' to the 'GoalRatings.long_term_goal' relationship. (Background on this warning at: https://sqlalche.me/e/20/qzyx) (This warning originated from the `configure_mappers()` process, which was invoked automatically in response to a user-initiated operation.)
+  return cls.query_class(
+127.0.0.1 - - [28/Aug/2025 20:12:43] "GET /api/ai-challenges/?user_id=xEa3sbIn1dckGWwxcM5wBOKlcWE2 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:12:48] "GET /api/weekly-goals/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:12:51] "GET /api/quick-notes/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/long-term-goals/completed HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/long-term-goals/archived HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/weekly-goals/all HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/long-term-goals/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/problems/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/daily-problem-logs/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/weekly-goal-intensities/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/quick-notes/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/ai-challenges/today?user_id=xEa3sbIn1dckGWwxcM5wBOKlcWE2 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:34] "GET /api/todo-items/ HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:37] "GET /api/ai-challenges/?user_id=xEa3sbIn1dckGWwxcM5wBOKlcWE2 HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:39] "OPTIONS /api/ai-challenges/generate HTTP/1.1" 200 -
+127.0.0.1 - - [28/Aug/2025 20:14:40] "[35m[1mPOST /api/ai-challenges/generate HTTP/1.1[0m" 201 -
+127.0.0.1 - - [28/Aug/2025 20:14:45] "GET /api/ai-challenges/?user_id=xEa3sbIn1dckGWwxcM5wBOKlcWE2 HTTP/1.1" 200 -
+ * Detected change in '/home/bashistha/Desktop/master_yourself_ai/backend/config.py', reloading
+🔍 Getting AI challenges for user: xEa3sbIn1dckGWwxcM5wBOKlcWE2
+✅ Found 2 challenges for user xEa3sbIn1dckGWwxcM5wBOKlcWE2
+📋 Challenge 1: Spend 30 minutes working on: Updated Title (Date: 2025-08-28)
+📋 Challenge 2: Talk to 5 strangers today (Date: 2025-08-26)
+🔍 Getting AI challenges for user: xEa3sbIn1dckGWwxcM5wBOKlcWE2
+✅ Found 2 challenges for user xEa3sbIn1dckGWwxcM5wBOKlcWE2
+📋 Challenge 1: Spend 30 minutes working on: Updated Title (Date: 2025-08-28)
+📋 Challenge 2: Talk to 5 strangers today (Date: 2025-08-26)
+🔍 Getting AI challenges for user: xEa3sbIn1dckGWwxcM5wBOKlcWE2
+✅ Found 2 challenges for user xEa3sbIn1dckGWwxcM5wBOKlcWE2
+📋 Challenge 1: Spend 30 minutes working on: Updated Title (Date: 2025-08-28)
+📋 Challenge 2: Talk to 5 strangers today (Date: 2025-08-26)
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 315-559-245
+./start_server.sh: line 5: 28803 Killed                  python run.py
