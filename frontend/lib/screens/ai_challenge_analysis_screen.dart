@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import 'dart:math';
 import '../providers/app_state.dart';
+import '../models/ai_challenge.dart';
 
 class AIChallengeAnalysisScreen extends StatefulWidget {
   @override
@@ -159,19 +161,19 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
   Color _getIntensityColor(int intensity) {
     switch (intensity) {
       case -3:
-        return Colors.red;
+        return Colors.red.shade600;
       case -2:
-        return Colors.orange;
+        return Colors.red.shade400;
       case -1:
-        return Colors.yellow.shade700;
+        return Colors.orange.shade400;
       case 0:
-        return Colors.grey;
+        return Colors.blueGrey.shade500;
       case 1:
-        return Colors.lightGreen;
+        return Colors.lightGreen.shade600;
       case 2:
-        return Colors.green;
+        return Colors.green.shade600;
       case 3:
-        return Colors.deepGreen;
+        return Colors.teal.shade700;
       default:
         return Colors.grey;
     }
@@ -181,37 +183,19 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('AI Challenge Analysis'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
+        title: Text(
+          'AI Challenge Analytics',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.purple.shade800,
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Icon(Icons.history, color: Colors.white),
             onPressed: () => _showHistoryDialog(context),
-            tooltip: 'View Challenge History',
-          ),
-          PopupMenuButton<int>(
-            onSelected: (days) {
-              setState(() {
-                selectedDays = days;
-              });
-              _loadChartData();
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 7, child: Text('Last 7 days')),
-              PopupMenuItem(value: 30, child: Text('Last 30 days')),
-              PopupMenuItem(value: 90, child: Text('Last 90 days')),
-            ],
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('${selectedDays}d'),
-                  Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
           ),
         ],
       ),
@@ -221,6 +205,59 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Time Range Selector
+              Row(
+                children: [
+                  Text(
+                    'Time Range: ',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  PopupMenuButton<int>(
+                    onSelected: (days) {
+                      setState(() {
+                        selectedDays = days;
+                      });
+                      _loadChartData();
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 7, child: Text('Last 7 days')),
+                      PopupMenuItem(value: 30, child: Text('Last 30 days')),
+                      PopupMenuItem(value: 90, child: Text('Last 90 days')),
+                    ],
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.purple.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${selectedDays} days',
+                            style: TextStyle(
+                              color: Colors.purple.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.purple.shade700,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 24),
+              
               // Header
               Container(
                 width: double.infinity,
@@ -327,133 +364,177 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
                       else if (chartData != null)
                         Container(
                           height: 300,
-                          child: LineChart(
-                            LineChartData(
-                              gridData: FlGridData(
-                                show: true,
-                                drawVerticalLine: true,
-                                horizontalInterval: 1,
-                                verticalInterval: 1,
-                                getDrawingHorizontalLine: (value) {
-                                  if (value == 0) {
-                                    return FlLine(
-                                      color: Colors.red.shade400,
-                                      strokeWidth: 2,
-                                      dashArray: [5, 5],
-                                    );
-                                  }
-                                  return FlLine(
-                                    color: Colors.grey.shade300,
-                                    strokeWidth: 1,
-                                  );
-                                },
-                                getDrawingVerticalLine: (value) {
-                                  return FlLine(
-                                    color: Colors.grey.shade300,
-                                    strokeWidth: 1,
-                                  );
-                                },
-                              ),
-                              titlesData: FlTitlesData(
-                                show: true,
-                                rightTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: 30,
-                                    interval: selectedDays > 30 ? 7 : 1,
-                                    getTitlesWidget: (double value, TitleMeta meta) {
-                                      final labels = chartData!['labels'] as List<dynamic>;
-                                      if (labels.length > value.toInt() && value.toInt() >= 0) {
-                                        final label = labels[value.toInt()] as String;
-                                        return SideTitleWidget(
-                                          axisSide: meta.axisSide,
-                                          child: Text(
-                                            isAggregatedByWeek ? label : label.split('-').last, // Show week label or just day
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
+                          child: _hasData() 
+                              ? LineChart(
+                                  LineChartData(
+                                    gridData: FlGridData(
+                                      show: true,
+                                      drawVerticalLine: true,
+                                      horizontalInterval: _getYAxisInterval(),
+                                      verticalInterval: 1,
+                                      getDrawingHorizontalLine: (value) {
+                                        return FlLine(
+                                          color: Colors.grey.shade300,
+                                          strokeWidth: 1,
                                         );
-                                      }
-                                      return SideTitleWidget(
-                                        axisSide: meta.axisSide,
-                                        child: Text(''),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    interval: _getYAxisInterval(),
-                                    getTitlesWidget: (double value, TitleMeta meta) {
-                                      return SideTitleWidget(
-                                        axisSide: meta.axisSide,
-                                        child: Text(
-                                          value.toInt().toString(),
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
+                                      },
+                                      getDrawingVerticalLine: (value) {
+                                        return FlLine(
+                                          color: Colors.grey.shade300,
+                                          strokeWidth: 1,
+                                        );
+                                      },
+                                    ),
+                                    titlesData: FlTitlesData(
+                                      show: true,
+                                      rightTitles: AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      topTitles: AxisTitles(
+                                        sideTitles: SideTitles(showTitles: false),
+                                      ),
+                                      bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          reservedSize: 30,
+                                          interval: 1,
+                                          getTitlesWidget: (value, meta) {
+                                            if (value == 0) {
+                                              return SideTitleWidget(
+                                                axisSide: meta.axisSide,
+                                                child: Text(
+                                                  '0',
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              );
+                                            } else if (value.toInt() > 0 && value.toInt() <= chartData!['labels'].length) {
+                                              return SideTitleWidget(
+                                                axisSide: meta.axisSide,
+                                                child: Text(
+                                                  chartData!['labels'][value.toInt() - 1] as String,
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade600,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                            return SideTitleWidget(
+                                              axisSide: meta.axisSide,
+                                              child: Text(''),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: true,
+                                          interval: _getYAxisInterval(),
+                                          getTitlesWidget: (value, meta) {
+                                            return Text(
+                                              value.toInt().toString(),
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            );
+                                          },
+                                          reservedSize: 42,
+                                        ),
+                                      ),
+                                    ),
+                                    borderData: FlBorderData(
+                                      show: true,
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    minX: 0,
+                                    maxX: chartData!['labels'].length.toDouble(),
+                                    minY: _getMinY(),
+                                    maxY: _getMaxY(),
+                                    lineBarsData: [
+                                      LineChartBarData(
+                                        spots: _getSpots(),
+                                        isCurved: true,
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.purple.shade400,
+                                            Colors.purple.shade200,
+                                          ],
+                                        ),
+                                        barWidth: 3,
+                                        isStrokeCapRound: true,
+                                        dotData: FlDotData(
+                                          show: true,
+                                          getDotPainter: (spot, percent, barData, index) {
+                                            return FlDotCirclePainter(
+                                              radius: 4,
+                                              color: Colors.purple.shade600,
+                                              strokeWidth: 2,
+                                              strokeColor: Colors.white,
+                                            );
+                                          },
+                                        ),
+                                        belowBarData: BarAreaData(
+                                          show: true,
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.purple.shade200.withOpacity(0.3),
+                                              Colors.purple.shade100.withOpacity(0.1),
+                                            ],
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
                                           ),
                                         ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              borderData: FlBorderData(
-                                show: true,
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                              minX: 0,
-                              maxX: ((chartData!['labels'] as List<dynamic>).length - 1).toDouble(),
-                              minY: _getMinY(),
-                              maxY: _getMaxY(),
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots: _getSpots(),
-                                  isCurved: true,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.deepPurple.withOpacity(0.8),
-                                      Colors.purple.withOpacity(0.8),
+                                      ),
                                     ],
-                                  ),
-                                  barWidth: 3,
-                                  isStrokeCapRound: true,
-                                  dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter: (spot, percent, barData, index) {
-                                      return FlDotCirclePainter(
-                                        radius: 4,
-                                        color: Colors.deepPurple,
-                                        strokeWidth: 2,
-                                        strokeColor: Colors.white,
-                                      );
-                                    },
-                                  ),
-                                  belowBarData: BarAreaData(
-                                    show: true,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.deepPurple.withOpacity(0.3),
-                                        Colors.purple.withOpacity(0.1),
+                                    extraLinesData: ExtraLinesData(
+                                      horizontalLines: [
+                                        HorizontalLine(
+                                          y: 0,
+                                          color: Colors.red.shade400,
+                                          strokeWidth: 2,
+                                          dashArray: [5, 5],
+                                        ),
                                       ],
                                     ),
                                   ),
+                                )
+                              : Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.psychology_outlined,
+                                        size: 64,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'No Challenges Completed',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Complete some AI challenges to see your progress here',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 14,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
                         )
                       else
                         Container(
@@ -502,119 +583,103 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
               SizedBox(height: 24),
               
               // Summary Cards
-              if (chartData != null) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                                size: 32,
+              Row(
+                children: [
+                  Expanded(
+                    child: Card(
+                      color: Colors.blue.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Active Days',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w500,
                               ),
-                              SizedBox(height: 8),
-                              Text(
-                                '${(chartData!['datasets'][0]['data'] as List<dynamic>).where((point) => (point as num) > 0).length}',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber.shade700,
-                                ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              chartData != null ? 
+                                (chartData!['datasets'][0]['data'] as List<dynamic>)
+                                  .where((point) => (point as num) > 0)
+                                  .length.toString() : '0',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade800,
                               ),
-                              Text(
-                                'Active Days',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.emoji_events,
-                                color: Colors.deepPurple,
-                                size: 32,
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Card(
+                      color: Colors.green.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Total Points',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
                               ),
-                              SizedBox(height: 8),
-                              Text(
-                                '${(chartData!['datasets'][0]['data'] as List<dynamic>).fold<int>(0, (sum, point) => sum + (point as num).toInt())}',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepPurple,
-                                ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              chartData != null ? 
+                                (chartData!['datasets'][0]['data'] as List<dynamic>)
+                                  .fold<int>(0, (sum, point) => sum + (point as num).toInt())
+                                  .toString() : '0',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade800,
                               ),
-                              Text(
-                                'Total Points',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
               
               SizedBox(height: 24),
               
               // Info Card
               Card(
+                color: Colors.purple.shade50,
                 child: Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue,
-                            size: 24,
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            'How it works',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12),
                       Text(
-                        '• Rate challenge intensity from -3 to +3 when completing\n'
-                        '• -3 to -1: Easy/Simple challenges\n'
-                        '• 0: Neutral difficulty\n'
-                        '• +1 to +3: Challenging/Difficult tasks\n'
-                        '• No intensity selected = -1 point\n'
-                        '• Points are tracked daily and aggregated by weeks when needed\n'
-                        '• The graph shows your progress over time\n'
-                        '• Positive points = good performance, negative = needs improvement',
+                        '💡 How Points Work',
                         style: TextStyle(
-                          color: Colors.grey.shade700,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade800,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '• Rate challenge completion from -3 to +3\n'
+                        '• Negative ratings become "credits" that keep you at level 0\n'
+                        '• Positive points first pay off credits before going above 0\n'
+                        '• You must earn enough positive points to clear your credits',
+                        style: TextStyle(
                           fontSize: 14,
-                          height: 1.5,
+                          color: Colors.grey.shade700,
                         ),
                       ),
                     ],
@@ -629,34 +694,48 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
   }
 
   double _getMaxY() {
-    if (chartData == null) return 10;
+    if (chartData == null) return 1;
     final data = chartData!['datasets'][0]['data'] as List<dynamic>;
-    final maxPoint = data.fold<double>(-double.infinity, (max, point) => 
+    if (data.isEmpty) return 1;
+    
+    final maxPoint = data.fold<double>(0.0, (max, point) => 
         (point as num).toDouble() > max ? (point as num).toDouble() : max);
+    
+    // Ensure we never go below 0 and have at least 1 for visibility
     return maxPoint > 0 ? maxPoint + 1 : 1;
   }
 
   double _getMinY() {
-    if (chartData == null) return 0;
-    final data = chartData!['datasets'][0]['data'] as List<dynamic>;
-    final minPoint = data.fold<double>(double.infinity, (min, point) => 
-        (point as num).toDouble() < min ? (point as num).toDouble() : min);
-    return minPoint < 0 ? minPoint - 1 : 0;
+    // With credit system, graph never goes below 0
+    return 0;
   }
 
   List<FlSpot> _getSpots() {
     if (chartData == null) return [];
     
-    List<FlSpot> spots = [];
     final data = chartData!['datasets'][0]['data'] as List<dynamic>;
-    print('Debug: Data length: ${data.length}');
+    final spots = <FlSpot>[];
+    
+    // Start from origin (0,0)
+    spots.add(FlSpot(0, 0));
+    
+    // Add actual data points starting from x=1, ensuring no negative values
     for (int i = 0; i < data.length; i++) {
-      final point = (data[i] as num).toDouble();
-      spots.add(FlSpot(i.toDouble(), point));
-      print('Debug: Point $i: $point');
+      final pointValue = (data[i] as num).toDouble();
+      // Force all values to be non-negative - credit system keeps us at 0 or above
+      final safeValue = pointValue < 0 ? 0.0 : pointValue;
+      spots.add(FlSpot((i + 1).toDouble(), safeValue));
     }
-    print('Debug: Total spots: ${spots.length}');
+    
     return spots;
+  }
+
+  bool _hasData() {
+    if (chartData == null) return false;
+    final data = chartData!['datasets'][0]['data'] as List<dynamic>;
+    // Show chart if there are any data points (completed challenges)
+    // Even if they result in 0 points due to credit system
+    return data.isNotEmpty;
   }
 
   double _getYAxisInterval() {
@@ -677,3 +756,4 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
     }
   }
 }
+

@@ -102,7 +102,9 @@ Requirements:
 - If the user has problems, consider creating a challenge that helps address or work around those problems
 - Be creative but realistic - the challenge should feel achievable yet meaningful
 - Return ONLY the challenge sentence, no explanations or additional text
-- Keep it under 20 words for clarity
+- Keep it under 25 words for clarity
+- Make each challenge unique and different from previous ones
+- Consider the user's context and create something relevant to their situation
 
 Examples of good challenges:
 - "Practice guitar for 30 minutes focusing on chord transitions"
@@ -110,6 +112,11 @@ Examples of good challenges:
 - "Take a 30-minute walk while thinking about solutions to your productivity problem"
 - "Call 3 people you haven't spoken to in a month"
 - "Spend 45 minutes learning a new skill online"
+- "Research 3 strategies to overcome your current challenge"
+- "Dedicate 30 minutes to planning your next steps toward your goal"
+- "Practice mindfulness for 15 minutes while focusing on your problem"
+- "Connect with someone who can help you with your goal"
+- "Take one specific action today that moves you closer to your long-term vision"
 
 Generate the challenge:"""
         
