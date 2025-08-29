@@ -526,7 +526,7 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
                                           ),
                                         ),
                                       ),
-                                    ] else if (!limitReached) ...[
+                                    ] else ...[
                                       TextButton(
                                         onPressed: () => _completeChallenge(context, challenge),
                                         child: Text(

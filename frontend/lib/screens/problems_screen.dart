@@ -60,76 +60,244 @@ class _ProblemsScreenState extends State<ProblemsScreen> {
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Add Problem'),
-        content: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: 'Problem Title',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a problem title';
-                  }
-                  return null;
-                },
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        elevation: 8,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+          ),
+          child: Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.indigo.shade50,
+                  Colors.white,
+                ],
               ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description (optional)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.track_changes,
+                          color: Colors.indigo,
+                          size: 28,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Add Problem',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.indigo,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  
+                  // Form
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: InputDecoration(
+                            labelText: 'Problem Title',
+                            hintText: 'Enter your problem title...',
+                            prefixIcon: Icon(Icons.track_changes, color: Colors.indigo),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.indigo, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a problem title';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 20),
+                        TextFormField(
+                          controller: _descriptionController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: 'Description (optional)',
+                            hintText: 'Add more details about your problem...',
+                            prefixIcon: Icon(Icons.description, color: Colors.indigo),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.indigo, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        DropdownButtonFormField<String>(
+                          value: _selectedCategory,
+                          decoration: InputDecoration(
+                            labelText: 'Category',
+                            hintText: 'Select a category...',
+                            prefixIcon: Icon(Icons.category, color: Colors.indigo),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.indigo, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          items: _categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(category.toUpperCase()),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedCategory = newValue!;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              try {
+                                await context.read<AppState>().createProblem(
+                                  _titleController.text,
+                                  _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                                  _selectedCategory,
+                                );
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Problem added successfully!'),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to add problem: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            'Add Problem',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(),
-                ),
-                items: _categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value!;
-                  });
-                },
-              ),
-            ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                await context.read<AppState>().createProblem(
-                  _titleController.text,
-                  _descriptionController.text.isEmpty ? null : _descriptionController.text,
-                  _selectedCategory,
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: Text('Add Problem'),
-          ),
-        ],
       ),
     );
   }
@@ -369,244 +537,246 @@ class _ProblemsScreenState extends State<ProblemsScreen> {
           ),
         ],
       ),
-      body: Consumer<AppState>(
-        builder: (context, appState, child) {
-          return Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'My Problems (${appState.activeProblems.length} active)',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 16),
-                Expanded(
-                  child: appState.problems.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.track_changes_outlined, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text(
-                                'No problems tracked yet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Add problems to track their intensity over time',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: appState.activeProblems.length,
-                          itemBuilder: (context, index) {
-                            final problem = appState.activeProblems[index];
-                            return Card(
-                              margin: EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                title: Text(
-                                  problem.title,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (problem.description != null && problem.description!.isNotEmpty)
-                                      Text(
-                                        problem.description!,
-                                        style: Theme.of(context).textTheme.bodyMedium,
-                                      ),
-                                    SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Text(
-                                            (problem.category ?? 'general').toUpperCase(),
-                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: Colors.blue,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 8),
-                                        Consumer<AppState>(
-                                          builder: (context, appState, child) {
-                                            final now = DateTime.now();
-                                            final today = DateTime(now.year, now.month, now.day);
-                                            final tomorrow = today.add(Duration(days: 1));
-                                            
-                                            final todayLog = appState.dailyProblemLogs.firstWhere(
-                                              (log) => 
-                                                log.problemId == problem.id && 
-                                                log.date.year == today.year &&
-                                                log.date.month == today.month &&
-                                                log.date.day == today.day,
-                                              orElse: () => DailyProblemLog(
-                                                id: 0,
-                                                problemId: problem.id,
-                                                date: today,
-                                                faced: false,
-                                                createdAt: today,
-                                              ),
-                                            );
-                                            
-                                            final isCheckedToday = todayLog.faced;
-                                            final intensity = todayLog.intensity ?? 0;
-                                            
-                                            String statusText = isCheckedToday ? '✓ Faced today' : '☐ Not faced today';
-                                            if (isCheckedToday && intensity > 0) {
-                                              statusText += ' (Intensity: $intensity)';
-                                            }
-                                            
-                                            // Add reset time info
-                                            if (isCheckedToday) {
-                                              final timeUntilReset = tomorrow.difference(now);
-                                              final hours = timeUntilReset.inHours;
-                                              final minutes = timeUntilReset.inMinutes % 60;
-                                              statusText += '\nResets in ${hours}h ${minutes}m';
-                                            }
-                                            
-                                            return Text(
-                                              statusText,
-                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                color: isCheckedToday ? Colors.green : Colors.grey[600],
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Daily tracking button with intensity
-                                    Consumer<AppState>(
-                                      builder: (context, appState, child) {
-                                        final now = DateTime.now();
-                                        final today = DateTime(now.year, now.month, now.day);
-                                        
-                                        final todayLog = appState.dailyProblemLogs.firstWhere(
-                                          (log) => 
-                                            log.problemId == problem.id && 
-                                            log.date.year == today.year &&
-                                            log.date.month == today.month &&
-                                            log.date.day == today.day,
-                                          orElse: () => DailyProblemLog(
-                                            id: 0,
-                                            problemId: problem.id,
-                                            date: today,
-                                            faced: false,
-                                            createdAt: today,
-                                          ),
-                                        );
-                                        
-                                        final isCheckedToday = todayLog.faced;
-                                        final intensity = todayLog.intensity ?? 0;
-                                        
-                                        return Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            // Checkbox
-                                            Checkbox(
-                                              value: isCheckedToday,
-                                              onChanged: (bool? value) async {
-                                                if (value == true) {
-                                                  // Show intensity dialog when checking
-                                                  _showIntensityDialog(problem, today);
-                                                } else {
-                                                  // Immediately uncheck and log
-                                                  try {
-                                                    await appState.logDailyProblem(problem.id, today, false, 0);
-                                                  } catch (e) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text('Failed to uncheck problem: $e'),
-                                                        backgroundColor: Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                }
-                                              },
-                                              activeColor: Colors.blue,
-                                            ),
-                                            // Intensity indicator
-                                            if (isCheckedToday && intensity > 0)
-                                              Container(
-                                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: intensity == 1 ? Colors.green : 
-                                                         intensity == 2 ? Colors.orange : Colors.red,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  '$intensity',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        );
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.check_circle, size: 20, color: Colors.green),
-                                      onPressed: () => _showSolveConfirmation(problem),
-                                      tooltip: 'Mark as Solved',
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.edit, size: 20),
-                                      onPressed: () => _showEditProblemDialog(problem),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.delete, size: 20, color: Colors.red),
-                                      onPressed: () => _showDeleteConfirmation(problem),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _showAddProblemDialog,
-                    icon: Icon(Icons.add),
-                    label: Text('Add Problem'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+      body: SafeArea(
+        child: Consumer<AppState>(
+          builder: (context, appState, child) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 32), // Extra bottom padding
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Problems (${appState.activeProblems.length} active)',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                  SizedBox(height: 16),
+                  Expanded(
+                    child: appState.problems.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.track_changes_outlined, size: 64, color: Colors.grey),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No problems tracked yet',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Add problems to track their intensity over time',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: appState.activeProblems.length,
+                            itemBuilder: (context, index) {
+                              final problem = appState.activeProblems[index];
+                              return Card(
+                                margin: EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  title: Text(
+                                    problem.title,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (problem.description != null && problem.description!.isNotEmpty)
+                                        Text(
+                                          problem.description!,
+                                          style: Theme.of(context).textTheme.bodyMedium,
+                                        ),
+                                      SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              (problem.category ?? 'general').toUpperCase(),
+                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Consumer<AppState>(
+                                            builder: (context, appState, child) {
+                                              final now = DateTime.now();
+                                              final today = DateTime(now.year, now.month, now.day);
+                                              final tomorrow = today.add(Duration(days: 1));
+                                              
+                                              final todayLog = appState.dailyProblemLogs.firstWhere(
+                                                (log) => 
+                                                  log.problemId == problem.id && 
+                                                  log.date.year == today.year &&
+                                                  log.date.month == today.month &&
+                                                  log.date.day == today.day,
+                                                orElse: () => DailyProblemLog(
+                                                  id: 0,
+                                                  problemId: problem.id,
+                                                  date: today,
+                                                  faced: false,
+                                                  createdAt: today,
+                                                ),
+                                              );
+                                              
+                                              final isCheckedToday = todayLog.faced;
+                                              final intensity = todayLog.intensity ?? 0;
+                                              
+                                              String statusText = isCheckedToday ? '✓ Faced today' : '☐ Not faced today';
+                                              if (isCheckedToday && intensity > 0) {
+                                                statusText += ' (Intensity: $intensity)';
+                                              }
+                                              
+                                              // Add reset time info
+                                              if (isCheckedToday) {
+                                                final timeUntilReset = tomorrow.difference(now);
+                                                final hours = timeUntilReset.inHours;
+                                                final minutes = timeUntilReset.inMinutes % 60;
+                                                statusText += '\nResets in ${hours}h ${minutes}m';
+                                              }
+                                              
+                                              return Text(
+                                                statusText,
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  color: isCheckedToday ? Colors.green : Colors.grey[600],
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Daily tracking button with intensity
+                                      Consumer<AppState>(
+                                        builder: (context, appState, child) {
+                                          final now = DateTime.now();
+                                          final today = DateTime(now.year, now.month, now.day);
+                                          
+                                          final todayLog = appState.dailyProblemLogs.firstWhere(
+                                            (log) => 
+                                              log.problemId == problem.id && 
+                                              log.date.year == today.year &&
+                                              log.date.month == today.month &&
+                                              log.date.day == today.day,
+                                            orElse: () => DailyProblemLog(
+                                              id: 0,
+                                              problemId: problem.id,
+                                              date: today,
+                                              faced: false,
+                                              createdAt: today,
+                                            ),
+                                          );
+                                          
+                                          final isCheckedToday = todayLog.faced;
+                                          final intensity = todayLog.intensity ?? 0;
+                                          
+                                          return Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Checkbox
+                                              Checkbox(
+                                                value: isCheckedToday,
+                                                onChanged: (bool? value) async {
+                                                  if (value == true) {
+                                                    // Show intensity dialog when checking
+                                                    _showIntensityDialog(problem, today);
+                                                  } else {
+                                                    // Immediately uncheck and log
+                                                    try {
+                                                      await appState.logDailyProblem(problem.id, today, false, 0);
+                                                    } catch (e) {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('Failed to uncheck problem: $e'),
+                                                          backgroundColor: Colors.red,
+                                                        ),
+                                                      );
+                                                    }
+                                                  }
+                                                },
+                                                activeColor: Colors.blue,
+                                              ),
+                                              // Intensity indicator
+                                              if (isCheckedToday && intensity > 0)
+                                                Container(
+                                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: intensity == 1 ? Colors.green : 
+                                                           intensity == 2 ? Colors.orange : Colors.red,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    '$intensity',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.check_circle, size: 20, color: Colors.green),
+                                        onPressed: () => _showSolveConfirmation(problem),
+                                        tooltip: 'Mark as Solved',
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.edit, size: 20),
+                                        onPressed: () => _showEditProblemDialog(problem),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.delete, size: 20, color: Colors.red),
+                                        onPressed: () => _showDeleteConfirmation(problem),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _showAddProblemDialog,
+                      icon: Icon(Icons.add),
+                      label: Text('Add Problem'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
