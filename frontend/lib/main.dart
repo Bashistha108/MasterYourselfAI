@@ -32,7 +32,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => AppState()..checkAuthState(),
+      create: (context) {
+        final appState = AppState();
+        appState.checkAuthState(); // This is now async but we don't need to await it here
+        return appState;
+      },
       child: MaterialApp(
         title: '',
         debugShowCheckedModeBanner: false,

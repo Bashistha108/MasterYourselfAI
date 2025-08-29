@@ -1025,21 +1025,51 @@ class AppState extends ChangeNotifier {
   }
 
   // Check current auth state
-  void checkAuthState() {
-    final currentUser = _authService.currentUser;
-    if (currentUser != null) {
-      _isAuthenticated = true;
-      _userEmail = currentUser.email;
-      _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
-      _userProfilePicture = currentUser.photoURL;
-    } else {
+  Future<void> checkAuthState() async {
+    try {
+      // Set up auth state listener
+      _authService.authStateChanges.listen((User? user) {
+        if (user != null) {
+          _isAuthenticated = true;
+          _userEmail = user.email;
+          _userName = user.displayName ?? user.email?.split('@')[0];
+          _userProfilePicture = user.photoURL;
+          
+          // Initialize app data when authenticated
+          initializeApp();
+        } else {
+          _isAuthenticated = false;
+          _userEmail = null;
+          _userName = null;
+          _userProfilePicture = null;
+        }
+        _isCheckingAuth = false;
+        notifyListeners();
+      });
+      
+      // Also check current user immediately
+      final currentUser = _authService.currentUser;
+      if (currentUser != null) {
+        _isAuthenticated = true;
+        _userEmail = currentUser.email;
+        _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
+        _userProfilePicture = currentUser.photoURL;
+        
+        // Initialize app data when authenticated
+        await initializeApp();
+      } else {
+        _isAuthenticated = false;
+        _userEmail = null;
+        _userName = null;
+        _userProfilePicture = null;
+      }
+    } catch (e) {
+      print('Error checking auth state: $e');
       _isAuthenticated = false;
-      _userEmail = null;
-      _userName = null;
-      _userProfilePicture = null;
+    } finally {
+      _isCheckingAuth = false; // Done checking auth
+      notifyListeners();
     }
-    _isCheckingAuth = false; // Done checking auth
-    notifyListeners();
   }
 
   // Send password reset email
@@ -1232,6 +1262,28 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       print('Failed to save user data to database: $e');
       // Continue even if database save fails - this is expected when backend is not running
+    }
+  }
+
+  // Feedback
+  Future<void> submitFeedback({
+    required String subject,
+    required String body,
+    String type = 'general',
+  }) async {
+    if (_userEmail == null) {
+      throw Exception('User email not available');
+    }
+    
+    try {
+      await _apiService.submitFeedback(
+        userEmail: _userEmail!,
+        subject: subject,
+        body: body,
+        type: type,
+      );
+    } catch (e) {
+      throw Exception('Failed to submit feedback: $e');
     }
   }
 }

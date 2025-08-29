@@ -35,6 +35,7 @@ def create_app(config_name='default'):
     from app.routes.quick_wins import quick_wins_bp
     from app.routes.goal_notes import goal_notes_bp
     from app.routes.graphs import graphs_bp
+    from app.routes.feedback import feedback_bp
     
     app.register_blueprint(weekly_goals_bp, url_prefix='/api/weekly-goals')
     app.register_blueprint(long_term_goals_bp, url_prefix='/api/long-term-goals')
@@ -49,6 +50,7 @@ def create_app(config_name='default'):
     app.register_blueprint(quick_wins_bp, url_prefix='/api/quick-wins')
     app.register_blueprint(goal_notes_bp, url_prefix='/api/goal-notes')
     app.register_blueprint(graphs_bp, url_prefix='/api/graphs')
+    app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     
     # Health check endpoint
     @app.route('/health')
