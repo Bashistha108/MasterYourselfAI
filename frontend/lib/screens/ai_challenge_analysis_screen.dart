@@ -201,7 +201,7 @@ class _AIChallengeAnalysisScreenState extends State<AIChallengeAnalysisScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 32), // Extra bottom padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
