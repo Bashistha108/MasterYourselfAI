@@ -432,9 +432,10 @@ def get_ai_challenge_points():
             total_intensity = day.total_intensity or 0
             zero_count = day.zero_intensity_count or 0
             
-            # Calculate total points: sum of intensities - (zero_count * 1)
-            # If someone has intensity 0, it counts as -1
-            total_points = total_intensity - zero_count
+            # Calculate total points: sum of intensities
+            # Intensity values are already correct (-3 to +3)
+            # No need to subtract zero_count since intensity 0 should be 0 points
+            total_points = total_intensity
             
             challenge_dict[day.challenge_date] = {
                 'count': day.completed_challenges,

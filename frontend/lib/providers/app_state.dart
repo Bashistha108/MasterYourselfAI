@@ -656,9 +656,7 @@ class AppState extends ChangeNotifier {
           'message': result['message'],
         };
       } else {
-        // Add new challenge to list
-        _aiChallenges.add(result['challenge']);
-        notifyListeners();
+        // Return the new challenge without modifying internal list
         return {
           'limit_reached': false,
           'challenge': result['challenge'],

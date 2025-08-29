@@ -24,9 +24,9 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
 
   Future<void> _loadTodayChallenges() async {
     final appState = Provider.of<AppState>(context, listen: false);
-    await appState.getTodayAIChallenges();
+    final challenges = await appState.getTodayAIChallenges();
     setState(() {
-      todayChallenges = appState.aiChallenges;
+      todayChallenges = challenges;
       selectedChallenge = todayChallenges.isNotEmpty ? todayChallenges.first : null;
       limitReached = todayChallenges.length >= 3;
       remainingChallenges = 3 - todayChallenges.length;
@@ -34,6 +34,8 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
   }
 
   void _generateNewChallenge() async {
+    if (isGenerating) return; // Prevent multiple simultaneous calls
+    
     setState(() {
       isGenerating = true;
     });
@@ -70,59 +72,6 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
       }
     } catch (error) {
       print('❌ Error generating challenge: $error');
-      setState(() {
-        isGenerating = false;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error generating challenge: $error'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _regenerateChallenge() async {
-    setState(() {
-      isGenerating = true;
-    });
-
-    try {
-      final appState = Provider.of<AppState>(context, listen: false);
-      final result = await appState.generateAIChallenge();
-      
-      if (result['limit_reached'] == true) {
-        // Limit reached, show all challenges
-        setState(() {
-          todayChallenges = result['challenges'];
-          selectedChallenge = todayChallenges.isNotEmpty ? todayChallenges.first : null;
-          isGenerating = false;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message']),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      } else {
-        // New challenge generated
-        setState(() {
-          todayChallenges.add(result['challenge']);
-          selectedChallenge = result['challenge'];
-          isGenerating = false;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('New challenge generated!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (error) {
-      print('❌ Error regenerating challenge: $error');
       setState(() {
         isGenerating = false;
       });
@@ -312,6 +261,10 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
     try {
       final appState = Provider.of<AppState>(context, listen: false);
       if (challenge.id != null) {
+        // First mark the challenge as completed
+        await appState.completeAIChallenge(challenge.id!, completed: true);
+        
+        // Then update the intensity
         await appState.updateChallengeIntensity(challenge.id!, challenge.intensity);
         
         Navigator.of(context).pop();
@@ -438,9 +391,18 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
                       ),
                       SizedBox(height: 24),
                       ElevatedButton.icon(
-                        onPressed: _generateNewChallenge,
-                        icon: Icon(Icons.add),
-                        label: Text('Generate Challenge'),
+                        onPressed: isGenerating ? null : _generateNewChallenge,
+                        icon: isGenerating 
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(Icons.add),
+                        label: Text(isGenerating ? 'Generating...' : 'Generate Challenge'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purple.shade600,
                           foregroundColor: Colors.white,
@@ -594,9 +556,18 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _generateNewChallenge,
-                        icon: Icon(Icons.add),
-                        label: Text('Generate Another Challenge'),
+                        onPressed: isGenerating ? null : _generateNewChallenge,
+                        icon: isGenerating 
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(Icons.add),
+                        label: Text(isGenerating ? 'Generating...' : 'Generate Another Challenge'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purple.shade600,
                           foregroundColor: Colors.white,
