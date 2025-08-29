@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:master_yourself_ai/providers/app_state.dart';
 import 'package:master_yourself_ai/screens/login_screen.dart';
-import 'package:master_yourself_ai/screens/dashboard_screen.dart';
+import 'package:master_yourself_ai/screens/main_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   @override
@@ -72,7 +72,7 @@ class AuthWrapper extends StatelessWidget {
 
         // Return appropriate screen based on authentication state
         if (appState.isAuthenticated) {
-          return DashboardScreen();
+          return MainScreen();
         } else {
           return LoginScreen();
         }

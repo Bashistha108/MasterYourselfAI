@@ -896,4 +896,27 @@ class ApiService {
       throw Exception('Failed to save user data');
     }
   }
+
+  // Feedback
+  Future<void> submitFeedback({
+    required String userEmail,
+    required String subject,
+    required String body,
+    String type = 'general',
+  }) async {
+    final response = await _makeRequest(
+      '/feedback/submit-feedback',
+      method: 'POST',
+      body: {
+        'user_email': userEmail,
+        'subject': subject,
+        'body': body,
+        'type': type,
+      },
+    );
+    
+    if (response['status'] != 'success') {
+      throw Exception(response['error'] ?? 'Failed to submit feedback');
+    }
+  }
 }
