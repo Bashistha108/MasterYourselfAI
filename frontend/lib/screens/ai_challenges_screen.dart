@@ -13,16 +13,29 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
   AIChallenge? selectedChallenge;
   bool isLoading = false;
   bool isGenerating = false;
+  bool limitReached = false;
+  int remainingChallenges = 3;
 
   @override
   void initState() {
     super.initState();
-    _generateFirstChallenge();
+    _loadTodayChallenges();
   }
 
-  void _generateFirstChallenge() async {
+  Future<void> _loadTodayChallenges() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.getTodayAIChallenges();
     setState(() {
-      isLoading = true;
+      todayChallenges = appState.aiChallenges;
+      selectedChallenge = todayChallenges.isNotEmpty ? todayChallenges.first : null;
+      limitReached = todayChallenges.length >= 3;
+      remainingChallenges = 3 - todayChallenges.length;
+    });
+  }
+
+  void _generateNewChallenge() async {
+    setState(() {
+      isGenerating = true;
     });
 
     try {
@@ -30,24 +43,35 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
       final result = await appState.generateAIChallenge();
       
       if (result['limit_reached'] == true) {
-        // This shouldn't happen on first load, but handle it
+        // Limit reached, show all challenges
         setState(() {
           todayChallenges = result['challenges'];
           selectedChallenge = todayChallenges.isNotEmpty ? todayChallenges.first : null;
-          isLoading = false;
+          limitReached = true;
+          remainingChallenges = 0;
+          isGenerating = false;
         });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: Colors.orange,
+          ),
+        );
       } else {
-        // First challenge generated
+        // New challenge generated
         setState(() {
-          todayChallenges = [result['challenge']];
+          todayChallenges.add(result['challenge']);
           selectedChallenge = result['challenge'];
-          isLoading = false;
+          limitReached = result['remaining'] == 0;
+          remainingChallenges = result['remaining'];
+          isGenerating = false;
         });
       }
     } catch (error) {
-      print('❌ Error generating first challenge: $error');
+      print('❌ Error generating challenge: $error');
       setState(() {
-        isLoading = false;
+        isGenerating = false;
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,157 +145,204 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
   void _completeChallenge(BuildContext context, AIChallenge challenge) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Complete Challenge'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Are you sure you want to mark this challenge as completed?'),
-            SizedBox(height: 20),
-            Text(
-              'Rate the intensity of this challenge:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            StatefulBuilder(
-              builder: (context, setState) {
-                return Column(
-                  children: [
-                    Slider(
-                      value: challenge.intensity.toDouble(),
-                      min: -3,
-                      max: 3,
-                      divisions: 6,
-                      activeColor: Colors.deepPurple,
-                      inactiveColor: Colors.grey.shade300,
-                      onChanged: (value) {
-                        setState(() {
-                          // Update the challenge with new intensity
-                          final index = todayChallenges.indexWhere((c) => c.id == challenge.id);
-                          if (index != -1) {
-                            todayChallenges[index] = todayChallenges[index].copyWith(
-                              intensity: value.toInt(),
-                            );
-                          }
-                        });
-                      },
+      builder: (BuildContext context) {
+        AIChallenge challengeCopy = challenge.copyWith(intensity: 0);
+        
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setDialogState) {
+            return AlertDialog(
+              title: Text('Complete Challenge'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    challenge.challengeText,
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'How well did you complete this challenge?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('-3', style: TextStyle(color: Colors.red)),
-                        Text('-2', style: TextStyle(color: Colors.orange)),
-                        Text('-1', style: TextStyle(color: Colors.yellow.shade700)),
-                        Text('0', style: TextStyle(color: Colors.grey)),
-                        Text('+1', style: TextStyle(color: Colors.lightGreen)),
-                        Text('+2', style: TextStyle(color: Colors.green)),
-                        Text('+3', style: TextStyle(color: Colors.deepGreen)),
-                      ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'More points means challenge better completed.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
                     ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getIntensityColor(challenge.intensity),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Intensity: ${challenge.intensity > 0 ? '+' : ''}${challenge.intensity}',
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Text('Completion Quality: '),
+                      Text(
+                        '${challengeCopy.intensity}',
                         style: TextStyle(
-                          color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          color: _getIntensityColor(challengeCopy.intensity),
                         ),
                       ),
+                    ],
+                  ),
+                  Slider(
+                    value: challengeCopy.intensity.toDouble(),
+                    min: -3,
+                    max: 3,
+                    divisions: 6,
+                    activeColor: _getIntensityColor(challengeCopy.intensity),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        challengeCopy = challengeCopy.copyWith(intensity: value.toInt());
+                      });
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('-3', style: TextStyle(color: Colors.red.shade600)),
+                      Text('-2', style: TextStyle(color: Colors.orange.shade600)),
+                      Text('-1', style: TextStyle(color: Colors.amber.shade600)),
+                      Text('0', style: TextStyle(color: Colors.grey.shade600)),
+                      Text('+1', style: TextStyle(color: Colors.lightGreen.shade600)),
+                      Text('+2', style: TextStyle(color: Colors.green.shade600)),
+                      Text('+3', style: TextStyle(color: Colors.green.shade800)),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    _getIntensityDescription(challengeCopy.intensity),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _getIntensityColor(challengeCopy.intensity),
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _submitCompletion(context, challenge);
-            },
-            child: Text('Complete'),
-          ),
-        ],
-      ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => _submitCompletion(context, challengeCopy),
+                  child: Text('Complete'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
+  }
+
+  Widget _buildIntensityLabel(int value, String label) {
+    final isSelected = value == 0; // Default to neutral
+    return Column(
+      children: [
+        Text(
+          '${value > 0 ? '+' : ''}$value',
+          style: TextStyle(
+            color: _getIntensityColor(value),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 12,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: _getIntensityColor(value),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 8,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getIntensityDescription(int intensity) {
+    switch (intensity) {
+      case -3:
+        return 'Poor - Did not complete the challenge well';
+      case -2:
+        return 'Fair - Completed but with significant issues';
+      case -1:
+        return 'Okay - Completed but could have done better';
+      case 0:
+        return 'Good - Completed the challenge satisfactorily';
+      case 1:
+        return 'Very Good - Completed with good effort and results';
+      case 2:
+        return 'Excellent - Completed exceptionally well';
+      case 3:
+        return 'Outstanding - Exceeded expectations completely';
+      default:
+        return 'Select completion quality';
+    }
   }
 
   Color _getIntensityColor(int intensity) {
     switch (intensity) {
       case -3:
-        return Colors.red;
+        return Colors.red.shade600;
       case -2:
-        return Colors.orange;
+        return Colors.red.shade400;
       case -1:
-        return Colors.yellow.shade700;
+        return Colors.orange.shade400;
       case 0:
-        return Colors.grey;
+        return Colors.blueGrey.shade500;
       case 1:
-        return Colors.lightGreen;
+        return Colors.lightGreen.shade600;
       case 2:
-        return Colors.green;
+        return Colors.green.shade600;
       case 3:
-        return Colors.deepGreen;
+        return Colors.teal.shade700;
       default:
         return Colors.grey;
     }
   }
 
-  void _submitCompletion(BuildContext context, AIChallenge challenge) {
-    final appState = Provider.of<AppState>(context, listen: false);
-    
-    appState.completeAIChallenge(
-      challenge.id!,
-      completed: true,
-    ).then((_) async {
-      // Update the challenge in the local list
-      final index = todayChallenges.indexWhere((c) => c.id == challenge.id);
-      if (index != -1) {
-        setState(() {
-          todayChallenges[index] = todayChallenges[index].copyWith(completed: true);
-          if (selectedChallenge?.id == challenge.id) {
-            selectedChallenge = todayChallenges[index];
-          }
-        });
+  void _submitCompletion(BuildContext context, AIChallenge challenge) async {
+    try {
+      final appState = Provider.of<AppState>(context, listen: false);
+      if (challenge.id != null) {
+        await appState.updateChallengeIntensity(challenge.id!, challenge.intensity);
+        
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Challenge completed with ${challenge.intensity >= 0 ? '+' : ''}${challenge.intensity} points!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Refresh the challenges list
+        _loadTodayChallenges();
+      } else {
+        throw Exception('Challenge ID is null');
       }
-      
-      // Update intensity if it's not 0
-      if (challenge.intensity != 0) {
-        try {
-          await appState.updateChallengeIntensity(challenge.id!, challenge.intensity);
-        } catch (error) {
-          print('Error updating intensity: $error');
-        }
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Challenge completed!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }).catchError((error) {
+    } catch (error) {
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error completing challenge: $error'),
           backgroundColor: Colors.red,
         ),
       );
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -296,448 +367,253 @@ class _AIChallengesScreenState extends State<AIChallengesScreen> {
             ],
           ),
         ),
-        child: isLoading
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Generating your first AI challenge...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with remaining challenges info
+              if (todayChallenges.isNotEmpty) ...[
+                Text(
+                  'Today\'s AI Challenges',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple.shade800,
+                  ),
                 ),
-              )
-            : Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Section
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.deepPurple, Colors.purple],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.deepPurple.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.psychology,
-                                color: Colors.white,
-                                size: 28,
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Your Daily AI Challenge',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Complete today\'s personalized challenge to grow and improve',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.white.withOpacity(0.8),
-                                size: 16,
-                              ),
-                              SizedBox(width: 8),
-                              Text(
-                                'You can generate up to 3 challenges per day',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                SizedBox(height: 8),
+                if (!limitReached)
+                  Text(
+                    'Remaining challenges: $remainingChallenges',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
                     ),
-                    
-                    SizedBox(height: 24),
-                    
-                    // Challenge Counter
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.refresh,
-                            color: Colors.blue.shade700,
-                            size: 20,
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '${todayChallenges.length}/3 challenges generated today',
-                              style: TextStyle(
-                                color: Colors.blue.shade800,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                  )
+                else
+                  Text(
+                    'Maximum 3 challenges per day reached',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.orange.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
-                    
-                    SizedBox(height: 24),
-                    
-                    // Challenge Display
-                    if (todayChallenges.isNotEmpty) ...[
+                  ),
+                SizedBox(height: 16),
+              ] else ...[
+                Text(
+                  'AI Challenges',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple.shade800,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
+                      SizedBox(height: 16),
                       Text(
-                        todayChallenges.length >= 3 ? 'Select Your Challenge' : 'Today\'s Challenge',
+                        'No challenges generated yet',
                         style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
+                          fontSize: 18,
+                          color: Colors.grey.shade600,
                         ),
                       ),
-                      SizedBox(height: 12),
-                      
-                      // Challenge Cards
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: todayChallenges.length,
-                          itemBuilder: (context, index) {
-                            final challenge = todayChallenges[index];
-                            final isSelected = selectedChallenge?.id == challenge.id;
-                            final isDisabled = todayChallenges.length >= 3 && !isSelected;
-                            
-                            return Container(
-                              margin: EdgeInsets.only(bottom: 12),
-                              child: Card(
-                                elevation: isSelected ? 4 : 2,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(
-                                    color: isSelected 
-                                        ? Colors.deepPurple 
-                                        : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: InkWell(
-                                  onTap: todayChallenges.length >= 3 ? () => _selectChallenge(challenge) : null,
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: isDisabled 
-                                          ? Colors.grey.shade100 
-                                          : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding: EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: isSelected 
-                                                    ? Colors.deepPurple.withOpacity(0.1)
-                                                    : Colors.grey.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Icon(
-                                                Icons.lightbulb_outline,
-                                                color: isSelected 
-                                                    ? Colors.deepPurple 
-                                                    : Colors.grey,
-                                                size: 20,
-                                              ),
-                                            ),
-                                            SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                'Challenge ${index + 1}',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: isSelected 
-                                                      ? Colors.deepPurple 
-                                                      : Colors.grey.shade700,
-                                                ),
-                                              ),
-                                            ),
-                                            if (isSelected)
-                                              Icon(
-                                                Icons.check_circle,
-                                                color: Colors.deepPurple,
-                                                size: 24,
-                                              ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 12),
-                                        Text(
-                                          challenge.challengeText,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            height: 1.4,
-                                            color: isDisabled 
-                                                ? Colors.grey.shade500 
-                                                : Colors.grey.shade800,
-                                          ),
-                                        ),
-                                        if (challenge.completed) ...[
-                                          SizedBox(height: 12),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.check_circle,
-                                                  color: Colors.green,
-                                                  size: 16,
-                                                ),
-                                                SizedBox(width: 6),
-                                                Text(
-                                                  'Completed',
-                                                  style: TextStyle(
-                                                    color: Colors.green,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                      SizedBox(height: 8),
+                      Text(
+                        'Click the button below to generate your first AI challenge',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                      
-                      // Action Buttons
-                      if (selectedChallenge != null && !selectedChallenge!.completed) ...[
-                        SizedBox(height: 16),
-                        Container(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => _completeChallenge(context, selectedChallenge!),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check_circle_outline, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Complete Challenge',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                      
-                      // Regenerate Button
-                      SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: todayChallenges.length >= 3 || isGenerating 
-                              ? null 
-                              : _regenerateChallenge,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: todayChallenges.length >= 3 
-                                ? Colors.grey 
-                                : Colors.deepPurple,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (isGenerating)
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              else
-                                Icon(Icons.refresh, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                todayChallenges.length >= 3 
-                                    ? 'Maximum 3 challenges reached'
-                                    : 'Generate Another Challenge',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      // No Challenges Today
-                      Expanded(
-                        child: Center(
-                          child: Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_task,
-                                  size: 64,
-                                  color: Colors.deepPurple.withOpacity(0.5),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'No Challenge Today',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Generate your first AI challenge to get started',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
+                      SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _generateNewChallenge,
+                        icon: Icon(Icons.add),
+                        label: Text('Generate Challenge'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple.shade600,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
                       ),
                     ],
-                    
-                    // Tips Section
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.amber.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.tips_and_updates,
-                            color: Colors.amber.shade700,
-                            size: 24,
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'AI challenges are personalized based on your goals and problems',
-                              style: TextStyle(
-                                color: Colors.amber.shade800,
-                                fontSize: 14,
-                              ),
+                  ),
+                ),
+              ],
+              
+              // Challenges list
+              if (todayChallenges.isNotEmpty) ...[
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: todayChallenges.length,
+                    itemBuilder: (context, index) {
+                      final challenge = todayChallenges[index];
+                      final isSelected = selectedChallenge?.id == challenge.id;
+                      final isDisabled = limitReached && !isSelected;
+                      
+                      return Card(
+                        margin: EdgeInsets.only(bottom: 12),
+                        color: isSelected 
+                          ? Colors.purple.shade50 
+                          : isDisabled 
+                            ? Colors.grey.shade100 
+                            : Colors.white,
+                        child: InkWell(
+                          onTap: limitReached ? () {
+                            setState(() {
+                              selectedChallenge = challenge;
+                            });
+                          } : null,
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        challenge.challengeText,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDisabled 
+                                            ? Colors.grey.shade600 
+                                            : Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Colors.purple.shade600,
+                                        size: 24,
+                                      ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Created: ${_formatDate(challenge.createdAt)}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                    Spacer(),
+                                    if (challenge.completed) ...[
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.green.shade300),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.check_circle,
+                                              color: Colors.green.shade600,
+                                              size: 14,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Completed',
+                                              style: TextStyle(
+                                                color: Colors.green.shade600,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getIntensityColor(challenge.intensity).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: _getIntensityColor(challenge.intensity)),
+                                        ),
+                                        child: Text(
+                                          '${challenge.intensity >= 0 ? '+' : ''}${challenge.intensity}',
+                                          style: TextStyle(
+                                            color: _getIntensityColor(challenge.intensity),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ] else if (!limitReached) ...[
+                                      TextButton(
+                                        onPressed: () => _completeChallenge(context, challenge),
+                                        child: Text(
+                                          'Complete',
+                                          style: TextStyle(
+                                            color: Colors.purple.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                
+                // Generate more button
+                if (!limitReached && todayChallenges.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _generateNewChallenge,
+                        icon: Icon(Icons.add),
+                        label: Text('Generate Another Challenge'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple.shade600,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }
