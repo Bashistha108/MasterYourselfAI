@@ -1,0 +1,395 @@
+================================================================================
+                    MASTER YOURSELF AI - DOKUMENTATION
+================================================================================
+
+ÜBERSICHT
+---------
+Master Yourself AI ist eine plattformübergreifende mobile Anwendung für persönliche 
+Entwicklung mit KI-gestützten Herausforderungen und Zielverfolgung. Die App hilft 
+Benutzern dabei, wöchentliche Ziele, langfristige Ziele und persönliche Probleme 
+zu verfolgen und bietet täglich personalisierte KI-generierte Herausforderungen 
+basierend auf der Problemintensitätsanalyse.
+
+================================================================================
+HAUPTFUNKTIONEN
+================================================================================
+
+1. WOCHENZIELE (Weekly Goals)
+   - Erstellen und verfolgen wöchentlicher Ziele
+   - Bewertungsskala von 0-10 für Fortschritt
+   - Archivierung abgeschlossener Ziele
+   - Wöchentliche Analyse und Berichte
+
+2. LANGZEITZIELE (Long Term Goals)
+   - Verwaltung langfristiger Bestrebungen
+   - Start- und Zielterminen
+   - Fortschrittsverfolgung
+   - Herausforderungen für langfristige Ziele
+
+3. PROBLEMVERFOLGUNG (Problem Tracking)
+   - Tägliche Problemlogging mit Intensitätsanalyse
+   - Problemkategorisierung
+   - Trendanalyse und Mustererkennung
+   - Lösungsverfolgung
+
+4. KI-HERAUSFORDERUNGEN (AI Challenges)
+   - Tägliche personalisierte Herausforderungen
+   - Basierend auf Problemintensität und Benutzerkontext
+   - Qualitätsbewertung (-3 bis +3 Skala)
+   - Tägliches Reset um 00:00 Uhr
+   - Maximum 3 Herausforderungen pro Tag
+   - Kreditsystem für negative Punkte
+
+5. FORTSCHRITTSVISUALISIERUNG (Progress Analytics)
+   - Interaktive Graphen und Diagramme
+   - Wöchentliche, monatliche und langfristige Analysen
+   - Punktebasierte Bewertungssysteme
+   - Trendanalyse und Vorhersagen
+
+6. GAMIFIKATION
+   - Streaks und Erfolgssysteme
+   - Punktebasierte Bewertung
+   - Kreditsystem für negative Bewertungen
+   - Fortschrittsindikatoren
+
+================================================================================
+TECHNISCHE ARCHITEKTUR
+================================================================================
+
+FRONTEND (Flutter App)
+---------------------
+- Framework: Flutter (Cross-platform)
+- Programmiersprache: Dart
+- State Management: Provider
+- UI-Bibliotheken: Material Design, fl_chart
+- Authentifizierung: Firebase Auth
+- Lokale Speicherung: SharedPreferences, SQLite
+
+BACKEND (Flask API)
+------------------
+- Framework: Flask (Python)
+- Datenbank: SQLite
+- ORM: SQLAlchemy
+- Migrationen: Alembic
+- KI-Integration: Google Gemini API
+- Authentifizierung: Firebase Auth
+
+DATENBANKSCHEMA
+---------------
+Haupttabellen:
+- weekly_goals: Wöchentliche Ziele
+- long_term_goals: Langzeitziele
+- problems: Persönliche Probleme
+- problem_logs: Tägliche Problemlogs
+- ai_challenges: KI-generierte Herausforderungen
+- goal_ratings: Zielbewertungen
+- quick_wins: Mikroerfolge
+- daily_problem_logs: Tägliche Problemlogs
+- goal_notes: Zielnotizen
+- todo_items: Aufgabenliste
+
+================================================================================
+INSTALLATION UND SETUP
+================================================================================
+
+VORAUSSETZUNGEN
+--------------
+- Python 3.8+
+- Flutter SDK
+- Git
+- Google Gemini API Key (für KI-Funktionen)
+
+BACKEND SETUP
+------------
+1. Repository klonen:
+   git clone [repository-url]
+   cd master_yourself_ai
+
+2. Backend-Verzeichnis betreten:
+   cd backend
+
+3. Virtuelle Umgebung aktivieren:
+   source venv/bin/activate  # Linux/Mac
+   venv\Scripts\activate     # Windows
+
+4. Abhängigkeiten installieren:
+   pip install -r requirements.txt
+
+5. Datenbank initialisieren:
+   flask db upgrade
+
+6. Server starten:
+   python run_anywhere.py
+
+FRONTEND SETUP
+-------------
+1. Frontend-Verzeichnis betreten:
+   cd frontend
+
+2. Flutter-Abhängigkeiten installieren:
+   flutter pub get
+
+3. App starten:
+   flutter run
+
+UMGEBUNGSVARIABLEN
+------------------
+Erstellen Sie eine .env-Datei im backend-Verzeichnis:
+GEMINI_API_KEY=your_gemini_api_key_here
+
+================================================================================
+HAUPTBILDSCHIRME UND FUNKTIONEN
+================================================================================
+
+1. DASHBOARD (Hauptbildschirm)
+   - Übersicht über alle Bereiche
+   - Navigation zu verschiedenen Funktionen
+   - Schnellzugriff auf wichtige Features
+   - Fortschrittsübersicht
+
+2. WOCHENZIELE (Weekly Goals)
+   - Ziele erstellen und bearbeiten
+   - Tägliche Bewertung (0-10 Skala)
+   - Fortschrittsbalken
+   - Archivierung abgeschlossener Ziele
+   - Wöchentliche Analyse
+
+3. LANGZEITZIELE (Long Term Goals)
+   - Langfristige Ziele definieren
+   - Start- und Zielterminen setzen
+   - Herausforderungen für Ziele
+   - Fortschrittsverfolgung
+
+4. MEINE PROBLEME (My Problems)
+   - Probleme kategorisieren und beschreiben
+   - Tägliche Intensitätsbewertung
+   - Problemlösungsverfolgung
+   - Trendanalyse
+
+5. KI-HERAUSFORDERUNGEN (AI Challenges)
+   - Tägliche personalisierte Herausforderungen
+   - Manuelle Generierung (max. 3 pro Tag)
+   - Qualitätsbewertung nach Abschluss
+   - Kreditsystem für negative Bewertungen
+   - Tägliches Reset um 00:00 Uhr
+
+6. ANALYTIK (Analytics)
+   - Wöchentliche Analyse
+   - Problemanalyse
+   - Langzeitzielanalyse
+   - KI-Herausforderungsanalyse
+   - Interaktive Graphen und Diagramme
+
+7. VERWALTUNG (Manage)
+   - Archivierte Ziele
+   - Gelöste Probleme
+   - Schnellnotizen
+   - Einstellungen
+
+================================================================================
+KI-FUNKTIONEN
+================================================================================
+
+GEMINI API INTEGRATION
+---------------------
+- Personalisierte Herausforderungsgenerierung
+- Kontextbasierte Empfehlungen
+- Dynamische Schwierigkeitsanpassung
+- Problemintensitätsanalyse
+
+HERAUSFORDERUNGSGENERIERUNG
+---------------------------
+- Basierend auf wöchentlichen Zielen
+- Berücksichtigung langfristiger Ziele
+- Integration aktueller Probleme
+- Tägliche Limitierung (3 Herausforderungen)
+- Qualitätsbewertungssystem
+
+KREDITSYSTEM
+------------
+- Negative Bewertungen (-3 bis -1) = Kredite
+- Positive Bewertungen (+1 bis +3) = Punkte
+- Kredite müssen zuerst abgearbeitet werden
+- Graph zeigt nur positive Werte an
+
+================================================================================
+DATENBANKSTRUKTUR
+================================================================================
+
+WICHTIGE TABELLEN:
+
+1. weekly_goals
+   - id, user_id, title, description, week_start_date
+   - completed, archived, created_at, updated_at
+
+2. long_term_goals
+   - id, user_id, title, description, start_date
+   - target_date, completed, archived
+
+3. problems
+   - id, user_id, title, description, category
+   - intensity, created_at, updated_at
+
+4. ai_challenges
+   - id, user_id, challenge_text, challenge_date
+   - completed, intensity, regeneration_count
+   - created_at, updated_at
+
+5. problem_logs
+   - id, user_id, problem_id, intensity
+   - log_date, notes
+
+================================================================================
+API-ENDPUNKTE
+================================================================================
+
+WOCHENZIELE:
+- GET /api/weekly-goals - Alle Ziele abrufen
+- POST /api/weekly-goals - Neues Ziel erstellen
+- PUT /api/weekly-goals/{id} - Ziel aktualisieren
+- DELETE /api/weekly-goals/{id} - Ziel löschen
+
+LANGZEITZIELE:
+- GET /api/long-term-goals - Alle Ziele abrufen
+- POST /api/long-term-goals - Neues Ziel erstellen
+- PUT /api/long-term-goals/{id} - Ziel aktualisieren
+
+PROBLEME:
+- GET /api/problems - Alle Probleme abrufen
+- POST /api/problems - Neues Problem erstellen
+- PUT /api/problems/{id} - Problem aktualisieren
+
+KI-HERAUSFORDERUNGEN:
+- POST /api/ai-challenges/generate - Herausforderung generieren
+- GET /api/ai-challenges/today-challenges - Heutige Herausforderungen
+- PUT /api/ai-challenges/{id}/complete - Herausforderung abschließen
+- PUT /api/ai-challenges/{id}/intensity - Intensität aktualisieren
+
+ANALYTIK:
+- GET /api/graphs/week-analysis - Wöchentliche Analyse
+- GET /api/graphs/problems-analysis - Problemanalyse
+- GET /api/graphs/ai-challenge-points - KI-Herausforderungspunkte
+
+================================================================================
+ENTWICKLUNG UND DEPLOYMENT
+================================================================================
+
+ENTWICKLUNGSUMWELT
+-----------------
+- Backend läuft auf localhost:5000
+- Frontend läuft auf localhost:3000 (Web) oder direkt auf Gerät
+- Datenbank: SQLite (Entwicklung)
+
+PRODUKTION
+----------
+- Backend: Flask mit Gunicorn
+- Frontend: Flutter Web oder Mobile App
+- Datenbank: PostgreSQL/MySQL
+- Hosting: AWS, Google Cloud, oder Heroku
+
+TESTING
+-------
+- Unit Tests für Backend-API
+- Widget Tests für Flutter-UI
+- Integration Tests für End-to-End-Funktionalität
+
+================================================================================
+SICHERHEIT
+================================================================================
+
+AUTHENTIFIZIERUNG
+----------------
+- Firebase Authentication
+- JWT-Token-basierte Authentifizierung
+- Sichere API-Endpunkte
+
+DATENSCHUTZ
+----------
+- Verschlüsselte Datenübertragung (HTTPS)
+- Sichere lokale Datenspeicherung
+- Benutzerdaten-Isolation
+
+================================================================================
+WARTUNG UND UPDATES
+================================================================================
+
+DATENBANKMIGRATIONEN
+-------------------
+- Alembic für Schema-Updates
+- Automatische Migrationen beim Deployment
+- Backup-Strategien
+
+VERSIONIERUNG
+-------------
+- Semantic Versioning (SemVer)
+- Changelog-Dokumentation
+- Rollback-Strategien
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+HÄUFIGE PROBLEME:
+
+1. Datenbankverbindungsfehler
+   - Überprüfen Sie die Datenbankpfad-Konfiguration
+   - Stellen Sie sicher, dass die Datenbank existiert
+
+2. KI-API-Fehler
+   - Überprüfen Sie den Gemini API-Schlüssel
+   - Stellen Sie sicher, dass die API-Quoten nicht überschritten wurden
+
+3. Frontend-Build-Fehler
+   - Flutter-Abhängigkeiten aktualisieren: flutter pub get
+   - Cache löschen: flutter clean
+
+4. Backend-Server-Fehler
+   - Virtuelle Umgebung aktivieren
+   - Abhängigkeiten installieren
+   - Logs überprüfen
+
+================================================================================
+ZUKÜNFTIGE ENTWICKLUNG
+================================================================================
+
+GEPLANTE FEATURES:
+- Push-Benachrichtigungen
+- Soziale Funktionen (Freunde hinzufügen)
+- Erweiterte KI-Analysen
+- Export-Funktionen für Daten
+- Offline-Modus
+- Mehrsprachige Unterstützung
+
+OPTIMIERUNGEN:
+- Performance-Verbesserungen
+- UI/UX-Verfeinerungen
+- Erweiterte Analysen
+- Bessere KI-Integration
+
+================================================================================
+KONTAKT UND SUPPORT
+================================================================================
+
+Entwickler: [Entwickler-Name]
+E-Mail: [E-Mail-Adresse]
+GitHub: [GitHub-Repository]
+
+Lizenz: [Lizenz-Informationen]
+
+================================================================================
+SCHLUSSWORT
+================================================================================
+
+Master Yourself AI ist eine umfassende Lösung für persönliche Entwicklung und 
+Zielverfolgung. Die Kombination aus traditioneller Zielsetzung und moderner 
+KI-Technologie bietet Benutzern ein einzigartiges Werkzeug für ihre persönliche 
+Entwicklung.
+
+Die App ist so konzipiert, dass sie sowohl für Anfänger als auch für erfahrene 
+Benutzer der persönlichen Entwicklung geeignet ist und bietet eine intuitive 
+Benutzeroberfläche mit leistungsstarken Analysefunktionen.
+
+================================================================================
+ENDE DER DOKUMENTATION
+================================================================================
+
