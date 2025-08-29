@@ -375,8 +375,38 @@ def get_ai_challenge_points():
     """Get AI challenge points over time - based on user-selected intensity (-3 to 3) or -1 if not selected"""
     try:
         days_back = int(request.args.get('days', 30))
-        end_date = date.today()
-        start_date = end_date - timedelta(days=days_back)
+        
+        # Get the first and last dates with challenge data
+        first_challenge = AIChallenges.query.order_by(AIChallenges.challenge_date.asc()).first()
+        last_challenge = AIChallenges.query.order_by(AIChallenges.challenge_date.desc()).first()
+        
+        if not first_challenge and not last_challenge:
+            # No challenges exist, return empty data
+            return jsonify({
+                'success': True,
+                'data': {
+                    'labels': [],
+                    'datasets': [{
+                        'label': 'AI Challenge Points',
+                        'data': [],
+                        'borderColor': '#9C27B0',
+                        'backgroundColor': 'rgba(156, 39, 176, 0.1)',
+                        'fill': True,
+                        'tension': 0.4
+                    }]
+                },
+                'total_points': 0,
+                'total_days': 0,
+                'aggregated_by_week': False
+            }), 200
+        
+        # Use actual challenge date range or fallback to requested days
+        if first_challenge and last_challenge:
+            start_date = first_challenge.challenge_date
+            end_date = last_challenge.challenge_date
+        else:
+            end_date = date.today()
+            start_date = end_date - timedelta(days=days_back)
         
         # Get completed AI challenges data with intensity
         challenge_data = db.session.query(
@@ -411,18 +441,43 @@ def get_ai_challenge_points():
                 'points': total_points
             }
         
-        # Calculate points for each day
+        # Calculate points for each day with credit system
         daily_points = []
+        accumulated_credits = 0
+        
         for day in date_range:
             if day in challenge_dict:
-                points = challenge_dict[day]['points']
+                day_points = challenge_dict[day]['points']
+                
+                # Apply credit system
+                if day_points < 0:
+                    # Negative points become credits
+                    accumulated_credits += abs(day_points)
+                    daily_points.append(0)  # Stay at level 0
+                elif day_points > 0:
+                    # Positive points first pay off credits
+                    if accumulated_credits > 0:
+                        remaining_points = day_points - accumulated_credits
+                        if remaining_points > 0:
+                            # Credits paid off, show positive points
+                            daily_points.append(remaining_points)
+                            accumulated_credits = 0
+                        else:
+                            # Still paying off credits
+                            daily_points.append(0)
+                            accumulated_credits = abs(remaining_points)
+                    else:
+                        # No credits to pay off, show positive points
+                        daily_points.append(day_points)
+                else:
+                    # Zero points
+                    daily_points.append(0)
             else:
-                # No completed challenges for this day
-                points = -1
-            daily_points.append(points)
+                # No completed challenges for this day - show 0
+                daily_points.append(0)
         
         # Determine if we should aggregate by weeks
-        should_aggregate_by_week = days_back >= 7
+        should_aggregate_by_week = len(date_range) >= 7
         
         if should_aggregate_by_week:
             # Aggregate by weeks
@@ -431,6 +486,7 @@ def get_ai_challenge_points():
             
             # Group dates into weeks
             current_week_start = start_date
+            week_number = 1
             while current_week_start <= end_date:
                 week_end = min(current_week_start + timedelta(days=6), end_date)
                 
@@ -445,7 +501,8 @@ def get_ai_challenge_points():
                 # Only include weeks that have data
                 if week_days > 0:
                     weekly_data.append(week_points)
-                    week_labels.append(f"Week {current_week_start.strftime('%m/%d')}")
+                    week_labels.append(f"Week {week_number}")
+                    week_number += 1
                 
                 current_week_start += timedelta(days=7)
             
@@ -463,9 +520,10 @@ def get_ai_challenge_points():
                 ]
             }
         else:
-            # Use daily data
+            # Use daily data with sequential day numbers starting from 1
+            day_labels = [f"Day {i+1}" for i in range(len(date_range))]
             chart_data = {
-                'labels': [day.strftime('%Y-%m-%d') for day in date_range],
+                'labels': day_labels,
                 'datasets': [
                     {
                         'label': 'AI Challenge Points',

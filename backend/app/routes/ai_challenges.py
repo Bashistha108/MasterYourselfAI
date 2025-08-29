@@ -479,25 +479,11 @@ def generate_ai_challenge_for_user(user_id):
             except Exception as e:
                 logger.error(f"Gemini generation failed for user {user_id}: {str(e)}")
         
-        # If Gemini is not available or fails, use a simple fallback
-        logger.warning(f"Gemini not available, using fallback for user {user_id}")
+        # If Gemini is not available or fails, use intelligent fallback
+        logger.warning(f"Using intelligent fallback for user {user_id}")
         
-        # Create a simple challenge based on available data
-        if weekly_goals or long_term_goals or active_problems:
-            # Use the first available data to create a meaningful challenge
-            if weekly_goals:
-                goal = weekly_goals[0]
-                challenge_text = f"Spend 30 minutes working on: {goal.title}"
-            elif long_term_goals:
-                goal = long_term_goals[0]
-                challenge_text = f"Take one step toward: {goal.title}"
-            elif active_problems:
-                problem = active_problems[0]
-                challenge_text = f"Take one action to address: {problem.name}"
-            else:
-                challenge_text = "Practice a new skill for 30 minutes"
-        else:
-            challenge_text = "Practice a new skill for 30 minutes"
+        # Create a diverse challenge based on available data
+        challenge_text = _generate_fallback_challenge(weekly_goals, long_term_goals, active_problems)
         
         return AIChallenges.create_daily_challenge(
             user_id=user_id,
@@ -506,11 +492,84 @@ def generate_ai_challenge_for_user(user_id):
         
     except Exception as e:
         logger.error(f"Error generating challenge for user {user_id}: {str(e)}")
-        # Final fallback
+        # Final fallback with diverse options
         return AIChallenges.create_daily_challenge(
             user_id=user_id,
-            challenge_text="Practice a new skill for 30 minutes"
+            challenge_text=_get_random_fallback_challenge()
         )
+
+def _generate_fallback_challenge(weekly_goals, long_term_goals, active_problems):
+    """Generate a fallback challenge based on available user data"""
+    import random
+    
+    # Create a list of possible challenges based on user data
+    possible_challenges = []
+    
+    # Challenges based on weekly goals
+    if weekly_goals:
+        for goal in weekly_goals:
+            possible_challenges.extend([
+                f"Spend 30 minutes working on: {goal.title}",
+                f"Take one specific action toward: {goal.title}",
+                f"Dedicate 45 minutes to progress on: {goal.title}",
+                f"Review and plan next steps for: {goal.title}"
+            ])
+    
+    # Challenges based on long-term goals
+    if long_term_goals:
+        for goal in long_term_goals:
+            possible_challenges.extend([
+                f"Take one step toward your long-term goal: {goal.title}",
+                f"Research or learn something related to: {goal.title}",
+                f"Spend 30 minutes planning your path to: {goal.title}",
+                f"Connect with someone who can help with: {goal.title}"
+            ])
+    
+    # Challenges based on problems
+    if active_problems:
+        for problem in active_problems:
+            possible_challenges.extend([
+                f"Take one action to address: {problem.name}",
+                f"Spend 20 minutes brainstorming solutions for: {problem.name}",
+                f"Research strategies to overcome: {problem.name}",
+                f"Talk to someone about: {problem.name}"
+            ])
+    
+    # If we have user data, use it
+    if possible_challenges:
+        return random.choice(possible_challenges)
+    
+    # If no user data, use diverse general challenges
+    return _get_random_fallback_challenge()
+
+def _get_random_fallback_challenge():
+    """Get a random general challenge when no user data is available"""
+    import random
+    
+    general_challenges = [
+        "Practice a new skill for 30 minutes",
+        "Read 20 pages of a book on a topic you want to learn",
+        "Take a 30-minute walk while thinking about your goals",
+        "Call or message someone you haven't spoken to in a while",
+        "Spend 30 minutes organizing your workspace or digital files",
+        "Learn something new online for 30 minutes",
+        "Practice mindfulness or meditation for 15 minutes",
+        "Write down 3 things you're grateful for today",
+        "Try a new recipe or cooking technique",
+        "Spend 30 minutes on a hobby you enjoy",
+        "Take 20 minutes to plan your tomorrow",
+        "Practice a language you're learning for 30 minutes",
+        "Do something creative for 30 minutes (draw, write, craft)",
+        "Spend 30 minutes exercising or doing physical activity",
+        "Research a topic you're curious about for 30 minutes",
+        "Practice a musical instrument for 30 minutes",
+        "Take 30 minutes to declutter one area of your space",
+        "Write in a journal for 20 minutes",
+        "Spend 30 minutes learning about personal finance",
+        "Practice public speaking by recording yourself for 10 minutes"
+    ]
+    
+    return random.choice(general_challenges)
 
 
 
