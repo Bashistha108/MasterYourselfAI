@@ -181,6 +181,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ElevatedButton(
               onPressed: () async {
                 if (emailController.text.isNotEmpty) {
+                  print("--------------------------------");
+                  print('Typed email: ${emailController.text}');
+                  print("--------------------------------");
+
                   Navigator.of(context).pop();
                   final appState = context.read<AppState>();
                   final success = await appState.sendPasswordResetEmail(emailController.text);

@@ -1,4 +1,5 @@
 # Import all models to ensure they are registered with SQLAlchemy
+from app.models.user import User
 from app.models.weekly_goals import WeeklyGoals
 from app.models.long_term_goals import LongTermGoals
 from app.models.problems import Problems
@@ -16,6 +17,7 @@ from app.models.todo_items import TodoItems
 from app.models.emails import Email
 
 __all__ = [
+    'User',
     'WeeklyGoals',
     'LongTermGoals', 
     'Problems',

@@ -21,7 +21,7 @@ import 'package:master_yourself_ai/screens/signup_screen.dart';
 import 'package:master_yourself_ai/screens/auth_wrapper.dart';
 import 'package:master_yourself_ai/screens/mailbox_screen.dart';
 import 'package:master_yourself_ai/screens/password_reset_screen.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 import 'dart:async';
 
 void main() async {
@@ -39,6 +39,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   StreamSubscription? _linkSubscription;
+  final _appLinks = AppLinks();
 
   @override
   void initState() {
@@ -54,27 +55,26 @@ class _MyAppState extends State<MyApp> {
 
   void _initDeepLinkHandling() {
     // Handle initial link if app was launched from a link
-    getInitialLink().then((String? link) {
-      if (link != null) {
-        _handleDeepLink(link);
+    _appLinks.getInitialAppLink().then((Uri? uri) {
+      if (uri != null) {
+        _handleDeepLink(uri);
       }
     });
 
     // Handle links when app is already running
-    _linkSubscription = uriLinkStream.listen((String? link) {
-      if (link != null) {
-        _handleDeepLink(link);
+    _linkSubscription = _appLinks.uriLinkStream.listen((Uri? uri) {
+      if (uri != null) {
+        _handleDeepLink(uri);
       }
     }, onError: (err) {
       print('Deep link error: $err');
     });
   }
 
-  void _handleDeepLink(String link) {
-    print('Received deep link: $link');
+  void _handleDeepLink(Uri uri) {
+    print('Received deep link: $uri');
     
-    if (link.startsWith('masteryourselfai://reset-password')) {
-      final uri = Uri.parse(link);
+    if (uri.scheme == 'masteryourselfai' && uri.host == 'reset-password') {
       final token = uri.queryParameters['token'];
       
       if (token != null) {

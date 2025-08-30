@@ -959,6 +959,19 @@ class ApiService {
     }
   }
 
+  // Authentication
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final response = await _makeRequest(
+      '/auth/login',
+      method: 'POST',
+      body: {
+        'email': email,
+        'password': password,
+      },
+    );
+    return response;
+  }
+
   // Password Reset
   Future<bool> sendPasswordResetEmail(String email) async {
     final response = await _makeRequest(

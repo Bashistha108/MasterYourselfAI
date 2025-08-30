@@ -22,8 +22,26 @@ class Config:
     if not os.path.exists(db_dir):
         os.makedirs(db_dir)
 
-    # SQLAlchemy configuration - always use absolute path, ignore environment variable
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.abspath(DB_PATH)}"
+    # Database configuration
+    # Use MySQL if MYSQL_* environment variables are set, otherwise use SQLite
+    MYSQL_HOST = os.environ.get('MYSQL_HOST', 'localhost')
+    MYSQL_PORT = os.environ.get('MYSQL_PORT', '3306')
+    MYSQL_USER = os.environ.get('MYSQL_USER', 'master_ai_user')
+    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', 'MasterAI2024!@#')
+    MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE', 'master_yourself_ai')
+    
+    # SQLAlchemy configuration
+    if all([MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE]):
+        # Use MySQL - URL encode the password to handle special characters
+        from urllib.parse import quote_plus
+        encoded_password = quote_plus(MYSQL_PASSWORD)
+        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{MYSQL_USER}:{encoded_password}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
+        print(f"Using MySQL database: {MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
+    else:
+        # Use SQLite as fallback
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.abspath(DB_PATH)}"
+        print(f"Using SQLite database: {os.path.abspath(DB_PATH)}")
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Debug information

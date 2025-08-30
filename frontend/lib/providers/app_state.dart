@@ -912,25 +912,22 @@ class AppState extends ChangeNotifier {
     try {
       setLoading(true);
       
-      UserCredential? result = await _authService.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      // Use Flask backend for login instead of Firebase
+      final response = await _apiService.login(email, password);
       
-      if (result != null && result.user != null) {
+      if (response != null && response['success'] == true) {
         _isAuthenticated = true;
         _isCheckingAuth = false;
-        _userEmail = result.user!.email;
-        _userName = result.user!.displayName ?? result.user!.email?.split('@')[0];
-        _userProfilePicture = result.user!.photoURL;
-        
-        // Save user data to database
-        await _saveUserToDatabase(result.user!);
+        _userEmail = email;
+        _userName = response['user']?['display_name'] ?? email.split('@')[0];
+        _userProfilePicture = null; // Flask backend doesn't have profile pictures
         
         notifyListeners();
         return true;
+      } else {
+        setError('Login failed: Invalid email or password');
+        return false;
       }
-      return false;
     } catch (e) {
       setError('Login failed: ${e.toString()}');
       return false;

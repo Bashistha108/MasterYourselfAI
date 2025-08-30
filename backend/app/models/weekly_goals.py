@@ -8,6 +8,7 @@ class WeeklyGoals(db.Model):
     __tablename__ = 'weekly_goals'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     week_start_date = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -19,10 +20,14 @@ class WeeklyGoals(db.Model):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    user = relationship('User', backref='weekly_goals')
+    
+    # Relationships
     # Note: relationships removed due to polymorphic relationship complexity
     # Use direct queries instead of relationships for challenges and goal_ratings
     
-    def __init__(self, title, description=None, week_start=None):
+    def __init__(self, user_id, title, description=None, week_start=None):
+        self.user_id = user_id
         self.title = title
         self.description = description
         if week_start is None:
@@ -38,6 +43,7 @@ class WeeklyGoals(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'title': self.title,
             'description': self.description,
             'week_start_date': self.week_start_date.isoformat(),
@@ -50,7 +56,7 @@ class WeeklyGoals(db.Model):
         }
     
     @classmethod
-    def get_current_week_goals(cls):
+    def get_current_week_goals(cls, user_id):
         """Get goals for the current week (excluding archived)"""
         now = datetime.utcnow()
         # Calculate start of current week (Monday)
@@ -60,30 +66,31 @@ class WeeklyGoals(db.Model):
         end_of_week = start_of_week + timedelta(days=7)
         
         return cls.query.filter(
+            cls.user_id == user_id,
             cls.week_start_date >= start_of_week,
             cls.week_start_date < end_of_week,
             cls.archived == False
         ).all()
     
     @classmethod
-    def get_all_goals(cls):
+    def get_all_goals(cls, user_id):
         """Get all weekly goals (current and past weeks, excluding archived)"""
-        return cls.query.filter(cls.archived == False).order_by(cls.week_start_date.desc()).all()
+        return cls.query.filter(cls.user_id == user_id, cls.archived == False).order_by(cls.week_start_date.desc()).all()
     
     @classmethod
-    def get_completed_goals(cls):
+    def get_completed_goals(cls, user_id):
         """Get all completed weekly goals (excluding archived)"""
-        return cls.query.filter(cls.completed == True, cls.archived == False).order_by(cls.week_start_date.desc()).all()
+        return cls.query.filter(cls.user_id == user_id, cls.completed == True, cls.archived == False).order_by(cls.week_start_date.desc()).all()
     
     @classmethod
-    def get_archived_goals(cls):
+    def get_archived_goals(cls, user_id):
         """Get all archived weekly goals"""
-        return cls.query.filter(cls.archived == True).order_by(cls.week_start_date.desc()).all()
+        return cls.query.filter(cls.user_id == user_id, cls.archived == True).order_by(cls.week_start_date.desc()).all()
     
     @classmethod
-    def can_add_goal(cls):
+    def can_add_goal(cls, user_id):
         """Check if we can add another goal (max 3 active per week)"""
-        current_goals = cls.get_current_week_goals()
+        current_goals = cls.get_current_week_goals(user_id)
         active_goals = [goal for goal in current_goals if not goal.completed]
         return len(active_goals) < 3
     

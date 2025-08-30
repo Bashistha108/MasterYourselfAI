@@ -61,6 +61,12 @@ def create_app(config_name='default'):
     def health_check():
         return {'status': 'healthy', 'message': 'Master Yourself AI API is running'}
     
+    # Direct route for password reset page (without /api/auth prefix)
+    @app.route('/reset-password-page')
+    def reset_password_page_direct():
+        from app.routes.auth import reset_password_page
+        return reset_password_page()
+    
     return app
 
 # Import models to ensure they are registered with SQLAlchemy
