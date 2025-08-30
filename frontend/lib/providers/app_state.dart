@@ -1079,10 +1079,24 @@ class AppState extends ChangeNotifier {
   Future<bool> sendPasswordResetEmail(String email) async {
     try {
       setLoading(true);
-      await _authService.sendPasswordResetEmail(email: email);
-      return true;
+      final response = await _apiService.sendPasswordResetEmail(email);
+      return response;
     } catch (e) {
       setError('Failed to send password reset email: ${e.toString()}');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Reset password
+  Future<bool> resetPassword(String token, String newPassword) async {
+    try {
+      setLoading(true);
+      final response = await _apiService.resetPassword(token, newPassword);
+      return response;
+    } catch (e) {
+      setError('Failed to reset password: ${e.toString()}');
       return false;
     } finally {
       setLoading(false);

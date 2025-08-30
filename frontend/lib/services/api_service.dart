@@ -958,6 +958,29 @@ class ApiService {
       throw Exception('Failed to add admin reply');
     }
   }
-  
+
+  // Password Reset
+  Future<bool> sendPasswordResetEmail(String email) async {
+    final response = await _makeRequest(
+      '/auth/send-password-reset',
+      method: 'POST',
+      body: {
+        'email': email,
+      },
+    );
+    return response['success'] ?? false;
+  }
+
+  Future<bool> resetPassword(String token, String newPassword) async {
+    final response = await _makeRequest(
+      '/auth/reset-password',
+      method: 'POST',
+      body: {
+        'token': token,
+        'new_password': newPassword,
+      },
+    );
+    return response['success'] ?? false;
+  }
 
 }
