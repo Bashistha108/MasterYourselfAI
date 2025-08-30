@@ -4,6 +4,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from datetime import datetime
+from app import db
+from app.models import Email
 
 feedback_bp = Blueprint('feedback', __name__)
 
@@ -60,6 +62,7 @@ def submit_feedback():
         msg['To'] = recipient_email
         msg['Subject'] = email_subject
         msg['Reply-To'] = user_email
+        msg['Bcc'] = sender_email  # BCC the app so we get a copy of admin replies
         
         # Add body to email
         msg.attach(MIMEText(email_body, 'plain'))
@@ -72,6 +75,21 @@ def submit_feedback():
             text = msg.as_string()
             server.sendmail(sender_email, recipient_email, text)
             server.quit()
+            
+            # Store email in database
+            email_record = Email(
+                subject=email_subject,
+                sender=user_email,
+                recipient=recipient_email,
+                content=email_body,
+                date=datetime.now(),
+                email_type='sent',
+                is_read=False
+            )
+            db.session.add(email_record)
+            db.session.commit()
+            
+            print(f"✅ Stored feedback email in database: {email_subject}")
             
             return jsonify({
                 'message': 'Feedback submitted successfully',

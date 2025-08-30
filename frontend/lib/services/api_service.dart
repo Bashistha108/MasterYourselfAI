@@ -11,6 +11,7 @@ import 'package:master_yourself_ai/models/weekly_goal_intensity.dart';
 import 'package:master_yourself_ai/models/daily_goal_intensity.dart';
 import 'package:master_yourself_ai/models/quick_note.dart';
 import 'package:master_yourself_ai/models/todo_item.dart';
+import 'package:master_yourself_ai/models/email.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5000/api';
@@ -919,4 +920,44 @@ class ApiService {
       throw Exception(response['error'] ?? 'Failed to submit feedback');
     }
   }
+
+  // Emails
+  Future<List<Email>> getEmails({String? userEmail}) async {
+    final queryParams = <String, String>{};
+    if (userEmail != null) queryParams['user_email'] = userEmail;
+    
+    final response = await _makeRequest('/emails/', queryParams: queryParams);
+    if (response['success']) {
+      return (response['data'] as List).map((json) => Email.fromJson(json)).toList();
+    }
+    throw Exception('Failed to load emails');
+  }
+  
+  Future<void> deleteEmail(String emailId) async {
+    final response = await _makeRequest('/emails/delete/$emailId', method: 'DELETE');
+    if (!response['success']) {
+      throw Exception('Failed to delete email');
+    }
+  }
+  
+  Future<void> addAdminReply({
+    required String subject,
+    required String userEmail,
+    required String content,
+  }) async {
+    final response = await _makeRequest(
+      '/emails/add-admin-reply',
+      method: 'POST',
+      body: {
+        'subject': subject,
+        'user_email': userEmail,
+        'content': content,
+      },
+    );
+    if (!response['success']) {
+      throw Exception('Failed to add admin reply');
+    }
+  }
+  
+
 }
