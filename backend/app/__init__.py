@@ -56,10 +56,10 @@ def create_app(config_name='default'):
     app.register_blueprint(emails_bp, url_prefix='/api/emails')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     
-    # Health check endpoint
-    @app.route('/health')
+    # Health check endpoint for Render
+    @app.route('/api/health')
     def health_check():
-        return {'status': 'healthy', 'message': 'Master Yourself AI API is running'}
+        return {'status': 'healthy', 'database': 'connected', 'message': 'Master Yourself AI API is running'}
     
     # Direct route for password reset page (without /api/auth prefix)
     @app.route('/reset-password-page')

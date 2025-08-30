@@ -23,18 +23,40 @@ class Config:
         os.makedirs(db_dir)
 
     # Database configuration
-    # Use MySQL if MYSQL_* environment variables are set, otherwise use SQLite
-    MYSQL_HOST = os.environ.get('MYSQL_HOST', 'localhost')
+    # Priority: PostgreSQL (Render) > MySQL > SQLite
+    
+    # Check for Render's DATABASE_URL first (PostgreSQL)
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    
+    # Manual PostgreSQL configuration
+    POSTGRES_HOST = os.environ.get('POSTGRES_HOST')
+    POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
+    POSTGRES_USER = os.environ.get('POSTGRES_USER')
+    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD')
+    POSTGRES_DATABASE = os.environ.get('POSTGRES_DATABASE')
+    
+    # MySQL configuration (fallback)
+    MYSQL_HOST = os.environ.get('MYSQL_HOST')
     MYSQL_PORT = os.environ.get('MYSQL_PORT', '3306')
-    MYSQL_USER = os.environ.get('MYSQL_USER', 'master_ai_user')
-    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', 'MasterAI2024!@#')
-    MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE', 'master_yourself_ai')
+    MYSQL_USER = os.environ.get('MYSQL_USER')
+    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD')
+    MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE')
     
     # SQLAlchemy configuration
-    if all([MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE]):
+    if DATABASE_URL:
+        # Render provides DATABASE_URL for PostgreSQL
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+        print(f"Using Render PostgreSQL database")
+    elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
+        # Manual PostgreSQL configuration
+        from urllib.parse import quote_plus
+        encoded_password = quote_plus(POSTGRES_PASSWORD or '')
+        SQLALCHEMY_DATABASE_URI = f"postgresql://{POSTGRES_USER}:{encoded_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}"
+        print(f"Using PostgreSQL database: {POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}")
+    elif all([MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE]):
         # Use MySQL - URL encode the password to handle special characters
         from urllib.parse import quote_plus
-        encoded_password = quote_plus(MYSQL_PASSWORD)
+        encoded_password = quote_plus(MYSQL_PASSWORD or '')
         SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{MYSQL_USER}:{encoded_password}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
         print(f"Using MySQL database: {MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
     else:
