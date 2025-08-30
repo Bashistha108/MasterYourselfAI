@@ -13,6 +13,7 @@ from app.models.weekly_goal_intensities import WeeklyGoalIntensities
 from app.models.daily_goal_intensities import DailyGoalIntensities
 from app.models.quick_notes import QuickNotes
 from app.models.todo_items import TodoItems
+from app.models.emails import Email
 
 __all__ = [
     'WeeklyGoals',
@@ -28,5 +29,6 @@ __all__ = [
     'WeeklyGoalIntensities',
     'DailyGoalIntensities',
     'QuickNotes',
-    'TodoItems'
+    'TodoItems',
+    'Email'
 ]

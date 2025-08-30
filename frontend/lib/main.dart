@@ -19,6 +19,7 @@ import 'package:master_yourself_ai/screens/week_history_screen.dart';
 import 'package:master_yourself_ai/screens/login_screen.dart';
 import 'package:master_yourself_ai/screens/signup_screen.dart';
 import 'package:master_yourself_ai/screens/auth_wrapper.dart';
+import 'package:master_yourself_ai/screens/mailbox_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -95,6 +96,7 @@ class MyApp extends StatelessWidget {
           '/future-self-analysis': (context) => FutureSelfAnalysisScreen(),
           '/ai-challenge-analysis': (context) => AIChallengeAnalysisScreen(),
           '/week-history': (context) => WeekHistoryScreen(),
+          '/mailbox': (context) => MailboxScreen(),
           '/login': (context) => LoginScreen(),
           '/signup': (context) => SignupScreen(),
         },

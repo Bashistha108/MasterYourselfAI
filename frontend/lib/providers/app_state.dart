@@ -10,6 +10,7 @@ import 'package:master_yourself_ai/models/quick_win.dart';
 import 'package:master_yourself_ai/models/goal_note.dart';
 import 'package:master_yourself_ai/models/quick_note.dart';
 import 'package:master_yourself_ai/models/todo_item.dart';
+import 'package:master_yourself_ai/models/email.dart';
 import 'package:master_yourself_ai/services/api_service.dart';
 import 'package:master_yourself_ai/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,6 +34,7 @@ class AppState extends ChangeNotifier {
   List<GoalNote> _goalNotes = [];
   List<QuickNote> _quickNotes = [];
   List<TodoItem> _todoItems = [];
+  List<Email> _emails = [];
   
   // Loading states
   bool _isLoading = false;
@@ -65,6 +67,7 @@ class AppState extends ChangeNotifier {
   List<GoalNote> get goalNotes => _goalNotes;
   List<QuickNote> get quickNotes => _quickNotes;
   List<TodoItem> get todoItems => _todoItems;
+  List<Email> get emails => _emails;
   bool get isLoading => _isLoading;
   String? get error => _error;
   
@@ -1286,4 +1289,51 @@ class AppState extends ChangeNotifier {
       throw Exception('Failed to submit feedback: $e');
     }
   }
+
+  // Get emails
+  Future<List<Email>> getEmails() async {
+    try {
+      final emails = await _apiService.getEmails(userEmail: _userEmail);
+      _emails = emails;
+      notifyListeners();
+      return emails;
+    } catch (e) {
+      setError('Failed to load emails: $e');
+      throw e;
+    }
+  }
+  
+  // Delete email
+  Future<void> deleteEmail(String emailId) async {
+    try {
+      await _apiService.deleteEmail(emailId);
+      _emails.removeWhere((email) => email.id == emailId);
+      notifyListeners();
+    } catch (e) {
+      setError('Failed to delete email: $e');
+      throw e;
+    }
+  }
+  
+  // Add admin reply
+  Future<void> addAdminReply({
+    required String subject,
+    required String userEmail,
+    required String content,
+  }) async {
+    try {
+      await _apiService.addAdminReply(
+        subject: subject,
+        userEmail: userEmail,
+        content: content,
+      );
+      // Refresh emails to show the new reply
+      await getEmails();
+    } catch (e) {
+      setError('Failed to add admin reply: $e');
+      throw e;
+    }
+  }
+  
+
 }

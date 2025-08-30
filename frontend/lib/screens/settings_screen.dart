@@ -3,6 +3,7 @@ import 'package:master_yourself_ai/providers/app_state.dart';
 import 'package:provider/provider.dart';
 import 'package:master_yourself_ai/screens/feedback_screen.dart';
 import 'package:master_yourself_ai/screens/change_password_screen.dart';
+import 'package:master_yourself_ai/screens/mailbox_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   @override
@@ -162,6 +163,85 @@ class SettingsScreen extends StatelessWidget {
                                           SizedBox(height: 4),
                                           Text(
                                             'Help us improve the app',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.grey.shade400,
+                                      size: 16,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        
+                        // Mailbox Card
+                        Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MailboxScreen(),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.mail,
+                                        color: Colors.green.shade600,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Mailbox',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey.shade800,
+                                            ),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'View replies to your feedback',
                                             style: TextStyle(
                                               fontSize: 14,
                                               color: Colors.grey.shade600,
