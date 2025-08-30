@@ -45,13 +45,13 @@ class Config:
     # SQLAlchemy configuration
     if DATABASE_URL:
         # Render provides DATABASE_URL for PostgreSQL
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace('postgresql://', 'postgresql+pg8000://') + '?sslmode=require'
-        print(f"Using Render PostgreSQL database with pg8000 and SSL")
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+        print(f"Using Render PostgreSQL database")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
         # Manual PostgreSQL configuration
         from urllib.parse import quote_plus
         encoded_password = quote_plus(POSTGRES_PASSWORD or '')
-        SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{POSTGRES_USER}:{encoded_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}?sslmode=require"
+        SQLALCHEMY_DATABASE_URI = f"postgresql://{POSTGRES_USER}:{encoded_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}"
         print(f"Using PostgreSQL database: {POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}")
     elif all([MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE]):
         # Use MySQL - URL encode the password to handle special characters
