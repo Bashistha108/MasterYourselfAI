@@ -20,6 +20,9 @@ import 'package:master_yourself_ai/screens/login_screen.dart';
 import 'package:master_yourself_ai/screens/signup_screen.dart';
 import 'package:master_yourself_ai/screens/auth_wrapper.dart';
 import 'package:master_yourself_ai/screens/mailbox_screen.dart';
+import 'package:master_yourself_ai/screens/password_reset_screen.dart';
+import 'package:uni_links/uni_links.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +32,62 @@ void main() async {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  StreamSubscription? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinkHandling();
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _initDeepLinkHandling() {
+    // Handle initial link if app was launched from a link
+    getInitialLink().then((String? link) {
+      if (link != null) {
+        _handleDeepLink(link);
+      }
+    });
+
+    // Handle links when app is already running
+    _linkSubscription = uriLinkStream.listen((String? link) {
+      if (link != null) {
+        _handleDeepLink(link);
+      }
+    }, onError: (err) {
+      print('Deep link error: $err');
+    });
+  }
+
+  void _handleDeepLink(String link) {
+    print('Received deep link: $link');
+    
+    if (link.startsWith('masteryourselfai://reset-password')) {
+      final uri = Uri.parse(link);
+      final token = uri.queryParameters['token'];
+      
+      if (token != null) {
+        // Navigate to password reset screen
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PasswordResetScreen(resetToken: token),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(

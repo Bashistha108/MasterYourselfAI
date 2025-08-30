@@ -37,6 +37,7 @@ def create_app(config_name='default'):
     from app.routes.graphs import graphs_bp
     from app.routes.feedback import feedback_bp
     from app.routes.emails import emails_bp
+    from app.routes.auth import auth_bp
     
     app.register_blueprint(weekly_goals_bp, url_prefix='/api/weekly-goals')
     app.register_blueprint(long_term_goals_bp, url_prefix='/api/long-term-goals')
@@ -53,6 +54,7 @@ def create_app(config_name='default'):
     app.register_blueprint(graphs_bp, url_prefix='/api/graphs')
     app.register_blueprint(feedback_bp, url_prefix='/api/feedback')
     app.register_blueprint(emails_bp, url_prefix='/api/emails')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     
     # Health check endpoint
     @app.route('/health')
