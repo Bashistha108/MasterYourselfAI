@@ -45,7 +45,15 @@ class Config:
     # SQLAlchemy configuration
     if DATABASE_URL:
         # Render provides DATABASE_URL for PostgreSQL
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace('postgresql://', 'postgresql+pg8000://')
+        # pg8000 needs special handling for connection string
+        db_url = DATABASE_URL
+        if 'postgresql://' in db_url:
+            # Convert to pg8000 format
+            db_url = db_url.replace('postgresql://', 'postgresql+pg8000://')
+            # Remove any query parameters that pg8000 doesn't support
+            if '?' in db_url:
+                db_url = db_url.split('?')[0]
+        SQLALCHEMY_DATABASE_URI = db_url
         print(f"Using Render PostgreSQL database with pg8000")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
         # Manual PostgreSQL configuration

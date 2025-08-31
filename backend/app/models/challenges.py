@@ -21,10 +21,12 @@ class Challenges(db.Model):
     # due to polymorphic relationship complexity
     weekly_goal = relationship('WeeklyGoals', 
                              foreign_keys=[goal_id], 
-                             primaryjoin="and_(Challenges.goal_id==WeeklyGoals.id, Challenges.goal_type=='weekly')")
+                             primaryjoin="and_(Challenges.goal_id==WeeklyGoals.id, Challenges.goal_type=='weekly')",
+                             overlaps="long_term_goal")
     long_term_goal = relationship('LongTermGoals',
                                  foreign_keys=[goal_id],
-                                 primaryjoin="and_(Challenges.goal_id==LongTermGoals.id, Challenges.goal_type=='long_term')")
+                                 primaryjoin="and_(Challenges.goal_id==LongTermGoals.id, Challenges.goal_type=='long_term')",
+                                 overlaps="weekly_goal")
     
     def to_dict(self):
         """Convert to dictionary for API response"""
