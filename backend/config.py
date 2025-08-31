@@ -45,18 +45,14 @@ class Config:
     # SQLAlchemy configuration
     if DATABASE_URL:
         # Render provides DATABASE_URL for PostgreSQL
-        # pg8000 needs special handling for connection string
+        # Add SSL requirement for Render PostgreSQL
         db_url = DATABASE_URL
-        if 'postgresql://' in db_url:
-            # Convert to pg8000 format
-            db_url = db_url.replace('postgresql://', 'postgresql+pg8000://')
-            # Add SSL requirement for Render PostgreSQL
-            if '?' in db_url:
-                db_url += '&sslmode=require'
-            else:
-                db_url += '?sslmode=require'
+        if '?' in db_url:
+            db_url += '&sslmode=require'
+        else:
+            db_url += '?sslmode=require'
         SQLALCHEMY_DATABASE_URI = db_url
-        print(f"Using Render PostgreSQL database with pg8000 and SSL")
+        print(f"Using Render PostgreSQL database with SSL")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
         # Manual PostgreSQL configuration
         from urllib.parse import quote_plus
