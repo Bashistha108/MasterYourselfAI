@@ -1059,4 +1059,18 @@ class ApiService {
     return response['success'] ?? false;
   }
 
+  // Change Password
+  Future<bool> changePassword(String userEmail, String currentPassword, String newPassword) async {
+    final response = await _makeRequest(
+      '/auth/change-password',
+      method: 'POST',
+      body: {
+        'user_email': userEmail,
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+    );
+    return response['success'] ?? false;
+  }
+
 }

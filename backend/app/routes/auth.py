@@ -615,6 +615,45 @@ def google_login():
         return jsonify({'error': 'Internal server error'}), 500
 
 
+@auth_bp.route('/change-password', methods=['POST'])
+def change_password():
+    """Change user password"""
+    try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        if not user_email or not current_password or not new_password:
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Find user in database
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Check current password
+        if not user.check_password(current_password):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+        
+        # Update password
+        user.set_password(new_password)
+        db.session.commit()
+        
+        print(f"✅ Password changed successfully for user: {user_email}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Password changed successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in change_password: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
     """Create new user account"""
