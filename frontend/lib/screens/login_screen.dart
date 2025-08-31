@@ -476,32 +476,36 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               SizedBox(height: 25),
                               
                               // Google Login Button
-                              Container(
-                                height: 55,
-                                child: OutlinedButton.icon(
-                                  onPressed: _isLoading ? null : () {
-                                    print("Google button pressed!");
-                                    _googleLogin();
-                                  },
-                                  icon: Icon(
-                                    Icons.g_mobiledata,
-                                    size: 24,
-                                    color: Colors.red.shade600,
+                              GestureDetector(
+                                onTap: _isLoading ? null : () {
+                                  print("Google button pressed!");
+                                  _googleLogin();
+                                },
+                                child: Container(
+                                  height: 55,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(15),
                                   ),
-                                  label: Text(
-                                    'Continue with Google',
-                                    style: TextStyle(
-                                      fontSize: MediaQuery.of(context).size.width * 0.04,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.grey.shade300),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    backgroundColor: Colors.white,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.g_mobiledata,
+                                        size: 24,
+                                        color: Colors.red.shade600,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Continue with Google',
+                                        style: TextStyle(
+                                          fontSize: MediaQuery.of(context).size.width * 0.04,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
