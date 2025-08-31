@@ -53,7 +53,9 @@ def send_reset_email(email, reset_token):
         # Create reset links
         app_reset_link = f"masteryourselfai://reset-password?token={reset_token}"
         # Use localhost for testing
-        web_reset_link = f"https://masteryourselfai.onrender.com/reset-password-page?token={reset_token}"
+        # web_reset_link = f"https://masteryourselfai.onrender.com/reset-password-page?token={reset_token}"
+        # Use localhost for testing
+        web_reset_link = f"http://localhost:5000/reset-password-page?token={reset_token}"
         
         # Email body
         body = f"""
@@ -126,15 +128,10 @@ def reset_password_page():
     if not token:
         return "Invalid or missing reset token", 400
     
-    # Check if token exists and is not expired
-    if token not in reset_tokens:
+    # Check if token exists and is not expired using database
+    reset_token = ResetToken.get_valid_token(token)
+    if not reset_token:
         return "Invalid or expired reset token", 400
-    
-    token_data = reset_tokens[token]
-    if datetime.now() > token_data['expires']:
-        # Remove expired token
-        del reset_tokens[token]
-        return "Reset token has expired", 400
     
     # HTML template for the password reset page
     html_template = """
