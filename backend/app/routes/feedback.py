@@ -5,7 +5,7 @@ from email.mime.multipart import MIMEMultipart
 import os
 from datetime import datetime
 from app import db
-from app.models import Email
+from app.models.emails import Email
 
 feedback_bp = Blueprint('feedback', __name__)
 
@@ -67,7 +67,29 @@ def submit_feedback():
         # Add body to email
         msg.attach(MIMEText(email_body, 'plain'))
         
-        # Send email
+                # Get user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Store email in database first
+        email_record = Email(
+            user_id=user.id,
+            subject=email_subject,
+            sender=user_email,
+            recipient=recipient_email,
+            content=email_body,
+            date=datetime.now(),
+            email_type='sent',
+            is_read=False
+        )
+        db.session.add(email_record)
+        db.session.commit()
+        
+        print(f"✅ Stored feedback email in database: {email_subject}")
+        
+        # Try to send email (but don't fail if email sending fails)
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
@@ -75,31 +97,18 @@ def submit_feedback():
             text = msg.as_string()
             server.sendmail(sender_email, recipient_email, text)
             server.quit()
-            
-            # Store email in database
-            email_record = Email(
-                subject=email_subject,
-                sender=user_email,
-                recipient=recipient_email,
-                content=email_body,
-                date=datetime.now(),
-                email_type='sent',
-                is_read=False
-            )
-            db.session.add(email_record)
-            db.session.commit()
-            
-            print(f"✅ Stored feedback email in database: {email_subject}")
-            
-            return jsonify({
-                'message': 'Feedback submitted successfully',
-                'status': 'success'
-            }), 200
-            
+            print(f"✅ Sent feedback email: {email_subject}")
         except smtplib.SMTPAuthenticationError:
-            return jsonify({'error': 'Email authentication failed'}), 500
+            print(f"⚠️ Email authentication failed, but feedback stored in database: {email_subject}")
         except smtplib.SMTPException as e:
-            return jsonify({'error': f'Email sending failed: {str(e)}'}), 500
+            print(f"⚠️ Email sending failed, but feedback stored in database: {email_subject} - Error: {str(e)}")
+        except Exception as e:
+            print(f"⚠️ Email sending error, but feedback stored in database: {email_subject} - Error: {str(e)}")
+        
+        return jsonify({
+            'message': 'Feedback submitted successfully',
+            'status': 'success'
+        }), 200
             
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
