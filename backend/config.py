@@ -43,9 +43,13 @@ class Config:
     MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE')
     
     # SQLAlchemy configuration
-    # TEMPORARY FIX: Use SQLite to get things working immediately
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/master_yourself_ai.db'
-    print(f"Using SQLite database for immediate functionality")
+    if DATABASE_URL:
+        # Render provides DATABASE_URL for PostgreSQL
+        db_url = DATABASE_URL
+        # Use psycopg2-binary instead of pg8000 for better compatibility
+        db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://')
+        SQLALCHEMY_DATABASE_URI = db_url
+        print(f"Using Render PostgreSQL database with psycopg2")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
         # Manual PostgreSQL configuration
         from urllib.parse import quote_plus
