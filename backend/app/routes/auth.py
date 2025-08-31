@@ -550,7 +550,10 @@ def google_login():
             # Get Google Client ID from environment
             google_client_id = os.getenv('GOOGLE_CLIENT_ID')
             if not google_client_id:
-                return jsonify({'error': 'Google Client ID not configured'}), 500
+                print("❌ GOOGLE_CLIENT_ID environment variable not set")
+                return jsonify({'error': 'Google Client ID not configured. Please set GOOGLE_CLIENT_ID environment variable.'}), 500
+            
+            print(f"✅ Using Google Client ID: {google_client_id[:20]}...")
             
             # Verify the token
             idinfo = id_token.verify_oauth2_token(
