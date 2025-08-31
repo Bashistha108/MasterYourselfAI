@@ -8,6 +8,7 @@ class GoalNotes(db.Model):
     __tablename__ = 'goal_notes'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     goal_id = Column(Integer, ForeignKey('long_term_goals.id'), nullable=False)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
@@ -21,6 +22,7 @@ class GoalNotes(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'goal_id': self.goal_id,
             'title': self.title,
             'content': self.content,

@@ -22,7 +22,7 @@ class AIChallenges(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
-            'user_id': self.user_id,
+            'user_id': str(self.user_id),  # Convert to string for frontend compatibility
             'challenge_text': self.challenge_text,
             'challenge_date': self.challenge_date.isoformat() if self.challenge_date else None,
             'completed': self.completed,

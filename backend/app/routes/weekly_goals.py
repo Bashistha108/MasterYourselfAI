@@ -189,8 +189,31 @@ def create_weekly_goal():
 def update_weekly_goal(goal_id):
     """Update a weekly goal"""
     try:
-        goal = WeeklyGoals.query.get_or_404(goal_id)
         data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goal = WeeklyGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
         
         if 'title' in data:
             goal.title = data['title']
@@ -224,7 +247,31 @@ def update_weekly_goal(goal_id):
 def delete_weekly_goal(goal_id):
     """Delete a weekly goal"""
     try:
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = WeeklyGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
+        
         db.session.delete(goal)
         db.session.commit()
         
@@ -244,7 +291,31 @@ def delete_weekly_goal(goal_id):
 def check_goal_completion(goal_id):
     """Check and update goal completion status based on average rating"""
     try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = WeeklyGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
         
         # Check and update completion status
         was_updated = goal.check_and_update_completion_status()
@@ -265,7 +336,31 @@ def check_goal_completion(goal_id):
 def archive_weekly_goal(goal_id):
     """Archive a weekly goal (soft delete)"""
     try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = WeeklyGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
         
         # Mark as archived
         goal.archived = True
@@ -289,10 +384,34 @@ def archive_weekly_goal(goal_id):
 def restore_weekly_goal(goal_id):
     """Restore a completed goal without triggering automatic completion check"""
     try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = WeeklyGoals.query.get_or_404(goal_id)
         
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
+        
         # Check if we can add more goals (max 3 active per week)
-        current_week_goals = WeeklyGoals.get_current_week_goals()
+        current_week_goals = WeeklyGoals.get_current_week_goals(user.id)
         active_goals = [g for g in current_week_goals if not g.completed]
         
         if len(active_goals) >= 3:

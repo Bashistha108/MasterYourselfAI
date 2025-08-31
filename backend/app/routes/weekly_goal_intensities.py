@@ -59,8 +59,18 @@ def create_weekly_goal_intensity():
                 'error': 'Intensity already exists for this goal and week'
             }), 400
         
+        # Get the first user as default (for backward compatibility)
+        from app.models.user import User
+        default_user = User.query.first()
+        if not default_user:
+            return jsonify({
+                'success': False,
+                'error': 'No users found in database'
+            }), 500
+        
         # Create new intensity
         new_intensity = WeeklyGoalIntensities(
+            user_id=default_user.id,
             goal_id=goal_id,
             week_start=week_start,
             intensity=intensity

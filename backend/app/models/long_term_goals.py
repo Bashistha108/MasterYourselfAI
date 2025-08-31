@@ -39,22 +39,22 @@ class LongTermGoals(db.Model):
         }
     
     @classmethod
-    def can_add_goal(cls):
+    def can_add_goal(cls, user_id):
         """Check if we can add another goal (max 3 total)"""
-        active_goals = cls.query.filter_by(status='active', archived=False).count()
+        active_goals = cls.query.filter_by(user_id=user_id, status='active', archived=False).count()
         return active_goals < 3
     
     @classmethod
-    def get_active_goals(cls):
+    def get_active_goals(cls, user_id):
         """Get all active long-term goals (excluding archived)"""
-        return cls.query.filter_by(status='active', archived=False).order_by(cls.created_at.desc()).all()
+        return cls.query.filter_by(user_id=user_id, status='active', archived=False).order_by(cls.created_at.desc()).all()
     
     @classmethod
-    def get_completed_goals(cls):
+    def get_completed_goals(cls, user_id):
         """Get all completed long-term goals (excluding archived)"""
-        return cls.query.filter_by(status='completed', archived=False).order_by(cls.created_at.desc()).all()
+        return cls.query.filter_by(user_id=user_id, status='completed', archived=False).order_by(cls.created_at.desc()).all()
     
     @classmethod
-    def get_archived_goals(cls):
+    def get_archived_goals(cls, user_id):
         """Get all archived long-term goals"""
-        return cls.query.filter_by(archived=True).order_by(cls.created_at.desc()).all()
+        return cls.query.filter_by(user_id=user_id, archived=True).order_by(cls.created_at.desc()).all()

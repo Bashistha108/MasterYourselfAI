@@ -10,7 +10,23 @@ long_term_goals_bp = Blueprint('long_term_goals', __name__)
 def get_long_term_goals():
     """Get all long-term goals"""
     try:
-        goals = LongTermGoals.get_active_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = LongTermGoals.get_active_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -25,7 +41,23 @@ def get_long_term_goals():
 def get_completed_long_term_goals():
     """Get all completed long-term goals"""
     try:
-        goals = LongTermGoals.get_completed_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = LongTermGoals.get_completed_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -40,7 +72,23 @@ def get_completed_long_term_goals():
 def get_archived_long_term_goals():
     """Get all archived long-term goals"""
     try:
-        goals = LongTermGoals.get_archived_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = LongTermGoals.get_archived_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -85,7 +133,24 @@ def create_long_term_goal():
                     'error': 'Invalid target_date format. Use YYYY-MM-DD'
                 }), 400
         
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = LongTermGoals(
+            user_id=user.id,
             title=data['title'],
             description=data.get('description', ''),
             start_date=start_date,
@@ -111,8 +176,31 @@ def create_long_term_goal():
 def update_long_term_goal(goal_id):
     """Update a long-term goal"""
     try:
-        goal = LongTermGoals.query.get_or_404(goal_id)
         data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goal = LongTermGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
         
         if 'title' in data:
             goal.title = data['title']
@@ -161,7 +249,31 @@ def update_long_term_goal(goal_id):
 def delete_long_term_goal(goal_id):
     """Archive a long-term goal"""
     try:
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = LongTermGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
+        
         goal.archived = True
         goal.updated_at = datetime.utcnow()
         db.session.commit()
@@ -183,7 +295,32 @@ def delete_long_term_goal(goal_id):
 def archive_long_term_goal(goal_id):
     """Archive a long-term goal"""
     try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = LongTermGoals.query.get_or_404(goal_id)
+        
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
+        
         goal.archived = True
         goal.updated_at = datetime.utcnow()
         db.session.commit()
@@ -204,10 +341,34 @@ def archive_long_term_goal(goal_id):
 def restore_archived_long_term_goal(goal_id):
     """Restore an archived goal"""
     try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         goal = LongTermGoals.query.get_or_404(goal_id)
         
+        # Check if goal belongs to the user
+        if goal.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
+        
         # Check if we can add more goals (max 3 active per week)
-        active_goals = LongTermGoals.query.filter_by(status='active', archived=False).count()
+        active_goals = LongTermGoals.query.filter_by(user_id=user.id, status='active', archived=False).count()
         if active_goals >= 3:
             return jsonify({
                 'success': False,

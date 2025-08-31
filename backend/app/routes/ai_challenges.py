@@ -31,21 +31,25 @@ def get_ai_challenges():
         logger.info(f"🔍 Getting AI challenges for user email: {user_email}")
         
         if not user_email:
-            print("❌ No user_email provided in request")
-            logger.warning("❌ No user_email provided in request")
-            return jsonify({
-                'success': False,
-                'error': 'user_email is required'
-            }), 400
-        
-        # Get database user ID from email
-        from app.models.user import User
-        user = User.get_by_email(user_email)
-        if not user:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
+            # Get the first user as default (for backward compatibility)
+            from app.models.user import User
+            default_user = User.query.first()
+            if not default_user:
+                return jsonify({
+                    'success': False,
+                    'error': 'No users found in database'
+                }), 500
+            user = default_user
+            print(f"✅ Using default user: {user.email}")
+        else:
+            # Get database user ID from email
+            from app.models.user import User
+            user = User.get_by_email(user_email)
+            if not user:
+                return jsonify({
+                    'success': False,
+                    'error': 'User not found'
+                }), 404
         
         challenges = AIChallenges.get_user_challenges(user.id)
         print(f"✅ Found {len(challenges)} challenges for user {user.id}")
@@ -78,20 +82,25 @@ def get_today_challenge():
         logger.info(f"🔍 Getting today's AI challenge for user: {user_email}")
         
         if not user_email:
-            logger.warning("❌ No user_email provided in request")
-            return jsonify({
-                'success': False,
-                'error': 'user_email is required'
-            }), 400
-        
-        # Get database user ID from email
-        from app.models.user import User
-        user = User.get_by_email(user_email)
-        if not user:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
+            # Get the first user as default (for backward compatibility)
+            from app.models.user import User
+            default_user = User.query.first()
+            if not default_user:
+                return jsonify({
+                    'success': False,
+                    'error': 'No users found in database'
+                }), 500
+            user = default_user
+            print(f"✅ Using default user: {user.email}")
+        else:
+            # Get database user ID from email
+            from app.models.user import User
+            user = User.get_by_email(user_email)
+            if not user:
+                return jsonify({
+                    'success': False,
+                    'error': 'User not found'
+                }), 404
         
         challenge = AIChallenges.get_today_challenge(user.id)
         if challenge:
@@ -123,20 +132,25 @@ def get_today_challenges():
         logger.info(f"🔍 Getting today's AI challenges for user: {user_email}")
         
         if not user_email:
-            logger.warning("❌ No user_email provided in request")
-            return jsonify({
-                'success': False,
-                'error': 'user_email is required'
-            }), 400
-        
-        # Get database user ID from email
-        from app.models.user import User
-        user = User.get_by_email(user_email)
-        if not user:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
+            # Get the first user as default (for backward compatibility)
+            from app.models.user import User
+            default_user = User.query.first()
+            if not default_user:
+                return jsonify({
+                    'success': False,
+                    'error': 'No users found in database'
+                }), 500
+            user = default_user
+            print(f"✅ Using default user: {user.email}")
+        else:
+            # Get database user ID from email
+            from app.models.user import User
+            user = User.get_by_email(user_email)
+            if not user:
+                return jsonify({
+                    'success': False,
+                    'error': 'User not found'
+                }), 404
         
         today = date.today()
         challenges = AIChallenges.query.filter_by(
@@ -167,19 +181,25 @@ def generate_ai_challenge():
         user_email = data.get('user_email')
         
         if not user_email:
-            return jsonify({
-                'success': False,
-                'error': 'user_email is required'
-            }), 400
-        
-        # Get database user ID from email
-        from app.models.user import User
-        user = User.get_by_email(user_email)
-        if not user:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
+            # Get the first user as default (for backward compatibility)
+            from app.models.user import User
+            default_user = User.query.first()
+            if not default_user:
+                return jsonify({
+                    'success': False,
+                    'error': 'No users found in database'
+                }), 500
+            user = default_user
+            print(f"✅ Using default user: {user.email}")
+        else:
+            # Get database user ID from email
+            from app.models.user import User
+            user = User.get_by_email(user_email)
+            if not user:
+                return jsonify({
+                    'success': False,
+                    'error': 'User not found'
+                }), 404
         
         # Check for daily reset
         AIChallenges.ensure_daily_reset(user.id)
@@ -334,12 +354,23 @@ def create_ai_challenge_with_gemini():
     """Create an AI challenge using Gemini based on user's problems and goals"""
     try:
         data = request.get_json()
-        user_id = data.get('user_id', 'default_user')
+        user_id = data.get('user_id')
+        
+        # If no user_id provided, get the first user as default
+        if not user_id:
+            from app.models.user import User
+            default_user = User.query.first()
+            if not default_user:
+                return jsonify({
+                    'success': False,
+                    'error': 'No users found in database'
+                }), 500
+            user_id = default_user.id
         
         # Step 1: Read user's problems, weekly goals, and long-term goals
-        weekly_goals = WeeklyGoals.get_current_week_goals()
-        long_term_goals = LongTermGoals.get_active_goals()
-        active_problems = Problems.query.filter_by(status='active').all()
+        weekly_goals = WeeklyGoals.get_current_week_goals(user_id)
+        long_term_goals = LongTermGoals.get_active_goals(user_id)
+        active_problems = Problems.query.filter_by(user_id=user_id, status='active').all()
         
         logger.info(f"Creating AI challenge for user {user_id}")
         logger.info(f"Found {len(weekly_goals)} weekly goals, {len(long_term_goals)} long-term goals, {len(active_problems)} problems")
@@ -485,13 +516,13 @@ def get_completed_challenges_history():
 def generate_ai_challenge_for_user(user_id):
     """Generate an AI challenge using Gemini API based on user's problems and goals"""
     # Get user's active weekly goals for current week
-    weekly_goals = WeeklyGoals.get_current_week_goals()
+    weekly_goals = WeeklyGoals.get_current_week_goals(user_id)
     
     # Get user's active long term goals
-    long_term_goals = LongTermGoals.get_active_goals()
+    long_term_goals = LongTermGoals.get_active_goals(user_id)
     
     # Get user's active problems
-    active_problems = Problems.query.filter_by(status='active').all()
+    active_problems = Problems.query.filter_by(user_id=user_id, status='active').all()
     
     # Log what data we found for debugging
     logger.info(f"Generating challenge for user {user_id}")

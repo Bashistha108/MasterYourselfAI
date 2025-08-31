@@ -8,6 +8,7 @@ class DailyProblemLogs(db.Model):
     __tablename__ = 'daily_problem_logs'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False)
     date = Column(Date, nullable=False)
     faced = Column(Boolean, default=False)
@@ -22,6 +23,7 @@ class DailyProblemLogs(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'problem_id': self.problem_id,
             'date': self.date.isoformat(),
             'faced': self.faced,

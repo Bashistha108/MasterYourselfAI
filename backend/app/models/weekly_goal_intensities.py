@@ -5,6 +5,7 @@ class WeeklyGoalIntensities(db.Model):
     __tablename__ = 'weekly_goal_intensities'
     
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     goal_id = db.Column(db.Integer, db.ForeignKey('weekly_goals.id'), nullable=False)
     week_start = db.Column(db.Date, nullable=False)
     intensity = db.Column(db.Integer, nullable=False, default=0)
@@ -17,6 +18,7 @@ class WeeklyGoalIntensities(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'goal_id': self.goal_id,
             'week_start': self.week_start.isoformat(),
             'intensity': self.intensity,

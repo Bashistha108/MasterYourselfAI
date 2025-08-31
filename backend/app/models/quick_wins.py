@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey
 from app import db
 
 class QuickWins(db.Model):
@@ -7,6 +7,7 @@ class QuickWins(db.Model):
     __tablename__ = 'quick_wins'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     date = Column(Date, nullable=False, default=date.today)
@@ -20,6 +21,7 @@ class QuickWins(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'title': self.title,
             'description': self.description,
             'date': self.date.isoformat(),

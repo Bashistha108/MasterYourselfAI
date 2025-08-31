@@ -30,9 +30,11 @@ class _ProblemsScreenState extends State<ProblemsScreen> {
   @override
   void initState() {
     super.initState();
-    // Load problems when screen is opened
+    // Load problems and daily problem logs when screen is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppState>().loadProblems();
+      final appState = context.read<AppState>();
+      appState.loadProblems();
+      appState.loadDailyProblemLogs();
     });
     
     // Start timer to update reset countdown every minute
@@ -688,6 +690,10 @@ class _ProblemsScreenState extends State<ProblemsScreen> {
                                               createdAt: today,
                                             ),
                                           );
+                                          
+                                          // Debug logging
+                                          print('🔍 Problem ${problem.id}: Found ${appState.dailyProblemLogs.length} total logs');
+                                          print('🔍 Problem ${problem.id}: Today log - Faced: ${todayLog.faced}, Date: ${todayLog.date}');
                                           
                                           final isCheckedToday = todayLog.faced;
                                           final intensity = todayLog.intensity ?? 0;

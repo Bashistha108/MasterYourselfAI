@@ -8,6 +8,7 @@ class GoalRatings(db.Model):
     __tablename__ = 'goal_ratings'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     goal_id = Column(Integer, nullable=False)  # ID of weekly or long-term goal (not FK due to polymorphic relationship)
     goal_type = Column(String(20), nullable=False)  # 'weekly' or 'long_term'
     week = Column(String(10), nullable=False)  # Format: YYYY-WW (e.g., 2024-01)
@@ -31,6 +32,7 @@ class GoalRatings(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'goal_id': self.goal_id,
             'goal_type': self.goal_type,
             'week': self.week,

@@ -144,7 +144,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> updateWeeklyGoal(int id, {String? title, String? description, int? rating, bool? completed}) async {
     try {
-      final updatedGoal = await _apiService.updateWeeklyGoal(id, title: title, description: description, rating: rating, completed: completed);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final updatedGoal = await _apiService.updateWeeklyGoal(id, title: title, description: description, rating: rating, completed: completed, userEmail: _userEmail!);
       final index = _weeklyGoals.indexWhere((goal) => goal.id == id);
       if (index != -1) {
         // Ensure the completed status is set correctly even if API doesn't return it
@@ -171,8 +174,11 @@ class AppState extends ChangeNotifier {
   
   Future<void> deleteWeeklyGoal(int id) async {
     try {
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
       // Archive the goal instead of permanently deleting
-      final archivedGoal = await _apiService.archiveWeeklyGoal(id);
+      final archivedGoal = await _apiService.archiveWeeklyGoal(id, _userEmail!);
       // Remove from main goals list
       _weeklyGoals.removeWhere((goal) => goal.id == id);
       // Add to archived goals list
@@ -185,7 +191,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> permanentlyDeleteWeeklyGoal(int id) async {
     try {
-      await _apiService.deleteWeeklyGoal(id);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      await _apiService.deleteWeeklyGoal(id, _userEmail!);
       _weeklyGoals.removeWhere((goal) => goal.id == id);
       notifyListeners();
     } catch (e) {
@@ -211,8 +220,11 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
       
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
       // Also update on the backend using the special restore endpoint
-      final restoredGoal = await _apiService.restoreWeeklyGoal(id);
+      final restoredGoal = await _apiService.restoreWeeklyGoal(id, _userEmail!);
       // Update the local state with the restored goal from backend
       final goalIndex = _weeklyGoals.indexWhere((goal) => goal.id == id);
       if (goalIndex != -1) {
@@ -236,8 +248,11 @@ class AppState extends ChangeNotifier {
         throw Exception('Already 3 goals active. Delete 1 to restore.');
       }
       
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
       // Also update on the backend using the restore archived endpoint
-      final restoredGoal = await _apiService.restoreArchivedWeeklyGoal(id);
+      final restoredGoal = await _apiService.restoreArchivedWeeklyGoal(id, _userEmail!);
       // Remove from archived goals list
       _archivedWeeklyGoals.removeWhere((goal) => goal.id == id);
       // Add to main goals list
@@ -255,7 +270,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> checkAndUpdateGoalCompletion(int goalId) async {
     try {
-      final result = await _apiService.checkGoalCompletion(goalId);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final result = await _apiService.checkGoalCompletion(goalId, _userEmail!);
       final updatedGoal = WeeklyGoal.fromJson(result);
       
       // Update the goal in the local list
@@ -334,7 +352,10 @@ class AppState extends ChangeNotifier {
   // Long Term Goals
   Future<void> loadLongTermGoals() async {
     try {
-      final goals = await _apiService.getLongTermGoals();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final goals = await _apiService.getLongTermGoals(_userEmail!);
       _longTermGoals = goals;
       notifyListeners();
     } catch (e) {
@@ -344,7 +365,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> createLongTermGoal(String title, String? description, DateTime? startDate, DateTime? targetDate) async {
     try {
-      final goal = await _apiService.createLongTermGoal(title, description, startDate, targetDate);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final goal = await _apiService.createLongTermGoal(title, description, startDate, targetDate, _userEmail!);
       _longTermGoals.add(goal);
       notifyListeners();
     } catch (e) {
@@ -354,7 +378,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> updateLongTermGoal(int id, {String? title, String? description, DateTime? startDate, DateTime? targetDate, String? status}) async {
     try {
-      final updatedGoal = await _apiService.updateLongTermGoal(id, title: title, description: description, startDate: startDate, targetDate: targetDate, status: status);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final updatedGoal = await _apiService.updateLongTermGoal(id, title: title, description: description, startDate: startDate, targetDate: targetDate, status: status, userEmail: _userEmail!);
       final index = _longTermGoals.indexWhere((goal) => goal.id == id);
       if (index != -1) {
         _longTermGoals[index] = updatedGoal;
@@ -367,8 +394,11 @@ class AppState extends ChangeNotifier {
   
   Future<void> deleteLongTermGoal(int id) async {
     try {
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
       // Archive the goal instead of permanently deleting
-      final archivedGoal = await _apiService.archiveLongTermGoal(id);
+      final archivedGoal = await _apiService.archiveLongTermGoal(id, _userEmail!);
       // Remove from main goals list
       _longTermGoals.removeWhere((goal) => goal.id == id);
       // Add to archived goals list
@@ -381,7 +411,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> loadCompletedLongTermGoals() async {
     try {
-      final goals = await _apiService.getCompletedLongTermGoals();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final goals = await _apiService.getCompletedLongTermGoals(_userEmail!);
       _completedLongTermGoals = goals;
       notifyListeners();
     } catch (e) {
@@ -391,7 +424,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> loadArchivedLongTermGoals() async {
     try {
-      final goals = await _apiService.getArchivedLongTermGoals();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final goals = await _apiService.getArchivedLongTermGoals(_userEmail!);
       _archivedLongTermGoals = goals;
       notifyListeners();
     } catch (e) {
@@ -406,8 +442,11 @@ class AppState extends ChangeNotifier {
         throw Exception('Already 3 goals active. Delete 1 to restore.');
       }
       
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
       // Restore the goal
-      final restoredGoal = await _apiService.restoreArchivedLongTermGoal(id);
+      final restoredGoal = await _apiService.restoreArchivedLongTermGoal(id, _userEmail!);
       // Remove from archived goals list
       _archivedLongTermGoals.removeWhere((goal) => goal.id == id);
       // Add to main goals list
@@ -441,8 +480,11 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
       
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
       // Also update on the backend
-      await _apiService.updateLongTermGoal(id, status: 'active');
+      await _apiService.updateLongTermGoal(id, status: 'active', userEmail: _userEmail!);
     } catch (e) {
       // Don't set error for user action errors (like 3 goals limit)
       // Only set error for system errors
@@ -455,7 +497,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> permanentlyDeleteLongTermGoal(int id) async {
     try {
-      await _apiService.deleteLongTermGoal(id);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      await _apiService.deleteLongTermGoal(id, _userEmail!);
       _longTermGoals.removeWhere((goal) => goal.id == id);
       _completedLongTermGoals.removeWhere((goal) => goal.id == id);
       _archivedLongTermGoals.removeWhere((goal) => goal.id == id);
@@ -468,7 +513,10 @@ class AppState extends ChangeNotifier {
   // Problems
   Future<void> loadProblems() async {
     try {
-      final problems = await _apiService.getProblems();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final problems = await _apiService.getProblems(_userEmail!);
       _problems = problems;
       notifyListeners();
     } catch (e) {
@@ -478,7 +526,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> createProblem(String title, String? description, String? category) async {
     try {
-      final problem = await _apiService.createProblem(title, description, category);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final problem = await _apiService.createProblem(title, description, category, _userEmail!);
       _problems.add(problem);
       notifyListeners();
     } catch (e) {
@@ -488,7 +539,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> updateProblem(int id, {String? title, String? description, String? category, String? status}) async {
     try {
-      final updatedProblem = await _apiService.updateProblem(id, title: title, description: description, category: category, status: status);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final updatedProblem = await _apiService.updateProblem(id, title: title, description: description, category: category, status: status, userEmail: _userEmail!);
       final index = _problems.indexWhere((problem) => problem.id == id);
       if (index != -1) {
         _problems[index] = updatedProblem;
@@ -509,11 +563,11 @@ class AppState extends ChangeNotifier {
         await updateProblem(id, status: 'archived');
       } else if (problem.status == 'resolved') {
         // If it's already resolved, permanently delete it
-        await _apiService.deleteProblem(id);
+        await _apiService.deleteProblem(id, _userEmail!);
         _problems.removeWhere((problem) => problem.id == id);
       } else if (problem.status == 'archived') {
         // If it's already archived, permanently delete it
-        await _apiService.deleteProblem(id);
+        await _apiService.deleteProblem(id, _userEmail!);
         _problems.removeWhere((problem) => problem.id == id);
       }
       notifyListeners();
@@ -548,7 +602,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> permanentlyDeleteProblem(int id) async {
     try {
-      await _apiService.deleteProblem(id);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      await _apiService.deleteProblem(id, _userEmail!);
       _problems.removeWhere((problem) => problem.id == id);
       notifyListeners();
     } catch (e) {
@@ -569,17 +626,30 @@ class AppState extends ChangeNotifier {
   // Daily Problem Logging
   Future<void> loadDailyProblemLogs() async {
     try {
-      final logs = await _apiService.getDailyProblemLogs();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      print('🔄 AppState: Loading daily problem logs for user: $_userEmail');
+      final logs = await _apiService.getDailyProblemLogs(userEmail: _userEmail);
+      print('✅ AppState: Loaded ${logs.length} daily problem logs');
+      for (var log in logs) {
+        print('📋 Log: Problem ${log.problemId}, Date: ${log.date}, Faced: ${log.faced}, Intensity: ${log.intensity}');
+      }
       _dailyProblemLogs = logs;
       notifyListeners();
     } catch (e) {
+      print('❌ AppState: Error loading daily problem logs: $e');
       setError('Failed to load daily problem logs: $e');
     }
   }
   
   Future<void> logDailyProblem(int problemId, DateTime date, bool faced, [int intensity = 0]) async {
     try {
-      final log = await _apiService.logDailyProblem(problemId, date, faced, intensity);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      
+      final log = await _apiService.logDailyProblem(problemId, date, faced, intensity, _userEmail);
       
       // Remove existing log for this problem and date if it exists
       _dailyProblemLogs.removeWhere((existingLog) => 
@@ -1241,7 +1311,10 @@ class AppState extends ChangeNotifier {
   // Todo Items
   Future<void> loadTodoItems() async {
     try {
-      final todos = await _apiService.getTodoItems();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final todos = await _apiService.getTodoItems(_userEmail!);
       _todoItems = todos;
       notifyListeners();
     } catch (e) {
@@ -1252,7 +1325,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> createTodoItem(String content) async {
     try {
-      final todo = await _apiService.createTodoItem(content);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final todo = await _apiService.createTodoItem(content, _userEmail!);
       _todoItems.add(todo);
       notifyListeners();
     } catch (e) {
@@ -1272,7 +1348,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> updateTodoItem(int todoId, {String? content, bool? completed}) async {
     try {
-      final updatedTodo = await _apiService.updateTodoItem(todoId, content: content, completed: completed);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final updatedTodo = await _apiService.updateTodoItem(todoId, content: content, completed: completed, userEmail: _userEmail!);
       final index = _todoItems.indexWhere((todo) => todo.id == todoId);
       if (index != -1) {
         _todoItems[index] = updatedTodo;
@@ -1298,7 +1377,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteTodoItem(int todoId) async {
     try {
-      await _apiService.deleteTodoItem(todoId);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      await _apiService.deleteTodoItem(todoId, _userEmail!);
       _todoItems.removeWhere((todo) => todo.id == todoId);
       notifyListeners();
     } catch (e) {

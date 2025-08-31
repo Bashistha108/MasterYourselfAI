@@ -8,6 +8,7 @@ class ProblemLogs(db.Model):
     __tablename__ = 'problem_logs'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     problem_id = Column(Integer, ForeignKey('problems.id'), nullable=False)
     log_date = Column(Date, nullable=False, default=date.today)
     intensity = Column(Integer, nullable=False, default=5)  # 1-10 scale
@@ -22,8 +23,10 @@ class ProblemLogs(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'problem_id': self.problem_id,
-            'log_date': self.log_date.isoformat(),
+            'date': self.log_date.isoformat(),  # Changed from log_date to date for frontend compatibility
+            'faced': True,  # If a log exists, it means the problem was faced
             'intensity': self.intensity,
             'notes': self.notes,
             'created_at': self.created_at.isoformat(),

@@ -9,7 +9,23 @@ todo_items_bp = Blueprint('todo_items', __name__)
 def get_todo_items():
     """Get all todo items"""
     try:
-        todos = TodoItems.query.order_by(TodoItems.created_at.desc()).all()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        todos = TodoItems.query.filter_by(user_id=user.id).order_by(TodoItems.created_at.desc()).all()
         return jsonify({
             'success': True,
             'data': [todo.to_dict() for todo in todos]
@@ -32,6 +48,22 @@ def create_todo_item():
                 'error': 'Missing content field'
             }), 400
         
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         content = data['content'].strip()
         if not content:
             return jsonify({
@@ -40,7 +72,7 @@ def create_todo_item():
             }), 400
         
         # Create new todo item
-        new_todo = TodoItems(content=content)
+        new_todo = TodoItems(user_id=user.id, content=content)
         db.session.add(new_todo)
         db.session.commit()
         
@@ -60,6 +92,23 @@ def create_todo_item():
 def update_todo_item(todo_id):
     """Update a todo item"""
     try:
+        data = request.get_json()
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         todo = TodoItems.query.get(todo_id)
         if not todo:
             return jsonify({
@@ -67,7 +116,12 @@ def update_todo_item(todo_id):
                 'error': 'Todo item not found'
             }), 404
         
-        data = request.get_json()
+        # Check if todo belongs to the user
+        if todo.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
         
         if 'content' in data:
             content = data['content'].strip()
@@ -100,12 +154,35 @@ def update_todo_item(todo_id):
 def delete_todo_item(todo_id):
     """Delete a todo item"""
     try:
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         todo = TodoItems.query.get(todo_id)
         if not todo:
             return jsonify({
                 'success': False,
                 'error': 'Todo item not found'
             }), 404
+        
+        # Check if todo belongs to the user
+        if todo.user_id != user.id:
+            return jsonify({
+                'success': False,
+                'error': 'Access denied'
+            }), 403
         
         db.session.delete(todo)
         db.session.commit()

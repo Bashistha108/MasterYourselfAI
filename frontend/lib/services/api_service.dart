@@ -103,8 +103,9 @@ class ApiService {
     String? description,
     int? rating,
     bool? completed,
+    required String userEmail,
   }) async {
-    final body = <String, dynamic>{};
+    final body = <String, dynamic>{'user_email': userEmail};
     if (title != null) body['title'] = title;
     if (description != null) body['description'] = description;
     if (rating != null) body['rating'] = rating;
@@ -121,10 +122,11 @@ class ApiService {
     throw Exception('Failed to update weekly goal');
   }
   
-  Future<void> deleteWeeklyGoal(int id) async {
+  Future<void> deleteWeeklyGoal(int id, String userEmail) async {
     final response = await _makeRequest(
       '/weekly-goals/$id',
       method: 'DELETE',
+      queryParams: {'user_email': userEmail},
     );
     if (!response['success']) {
       throw Exception('Failed to delete weekly goal');
@@ -161,10 +163,11 @@ class ApiService {
     throw Exception('Failed to load archived weekly goals');
   }
   
-  Future<Map<String, dynamic>> checkGoalCompletion(int goalId) async {
+  Future<Map<String, dynamic>> checkGoalCompletion(int goalId, String userEmail) async {
     final response = await _makeRequest(
       '/weekly-goals/$goalId/check-completion',
       method: 'POST',
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       return response['data'];
@@ -172,10 +175,11 @@ class ApiService {
     throw Exception('Failed to check goal completion');
   }
   
-  Future<WeeklyGoal> restoreWeeklyGoal(int goalId) async {
+  Future<WeeklyGoal> restoreWeeklyGoal(int goalId, String userEmail) async {
     final response = await _makeRequest(
       '/weekly-goals/$goalId/restore',
       method: 'POST',
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       return WeeklyGoal.fromJson(response['data']);
@@ -183,10 +187,11 @@ class ApiService {
     throw Exception('Failed to restore weekly goal');
   }
   
-  Future<WeeklyGoal> archiveWeeklyGoal(int goalId) async {
+  Future<WeeklyGoal> archiveWeeklyGoal(int goalId, String userEmail) async {
     final response = await _makeRequest(
       '/weekly-goals/$goalId/archive',
       method: 'POST',
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       return WeeklyGoal.fromJson(response['data']);
@@ -194,10 +199,11 @@ class ApiService {
     throw Exception('Failed to archive weekly goal');
   }
   
-  Future<WeeklyGoal> restoreArchivedWeeklyGoal(int goalId) async {
+  Future<WeeklyGoal> restoreArchivedWeeklyGoal(int goalId, String userEmail) async {
     final response = await _makeRequest(
       '/weekly-goals/$goalId/restore-archived',
       method: 'POST',
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       return WeeklyGoal.fromJson(response['data']);
@@ -277,8 +283,8 @@ class ApiService {
   }
   
   // Long Term Goals
-  Future<List<LongTermGoal>> getLongTermGoals() async {
-    final response = await _makeRequest('/long-term-goals/');
+  Future<List<LongTermGoal>> getLongTermGoals(String userEmail) async {
+    final response = await _makeRequest('/long-term-goals/', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => LongTermGoal.fromJson(json))
@@ -292,6 +298,7 @@ class ApiService {
     String? description,
     DateTime? startDate,
     DateTime? targetDate,
+    String userEmail,
   ) async {
     final response = await _makeRequest(
       '/long-term-goals/',
@@ -301,6 +308,7 @@ class ApiService {
         if (description != null) 'description': description,
         if (startDate != null) 'start_date': '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}',
         if (targetDate != null) 'target_date': '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}',
+        'user_email': userEmail,
       },
     );
     if (response['success']) {
@@ -316,8 +324,9 @@ class ApiService {
     DateTime? startDate,
     DateTime? targetDate,
     String? status,
+    required String userEmail,
   }) async {
-    final body = <String, dynamic>{};
+    final body = <String, dynamic>{'user_email': userEmail};
     if (title != null) body['title'] = title;
     if (description != null) body['description'] = description;
     if (startDate != null) body['start_date'] = '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
@@ -335,18 +344,19 @@ class ApiService {
     throw Exception('Failed to update long term goal');
   }
   
-  Future<void> deleteLongTermGoal(int id) async {
+  Future<void> deleteLongTermGoal(int id, String userEmail) async {
     final response = await _makeRequest(
       '/long-term-goals/$id',
       method: 'DELETE',
+      queryParams: {'user_email': userEmail},
     );
     if (!response['success']) {
       throw Exception('Failed to delete long term goal');
     }
   }
   
-  Future<List<LongTermGoal>> getCompletedLongTermGoals() async {
-    final response = await _makeRequest('/long-term-goals/completed');
+  Future<List<LongTermGoal>> getCompletedLongTermGoals(String userEmail) async {
+    final response = await _makeRequest('/long-term-goals/completed', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => LongTermGoal.fromJson(json))
@@ -355,8 +365,8 @@ class ApiService {
     throw Exception('Failed to load completed long term goals');
   }
   
-  Future<List<LongTermGoal>> getArchivedLongTermGoals() async {
-    final response = await _makeRequest('/long-term-goals/archived');
+  Future<List<LongTermGoal>> getArchivedLongTermGoals(String userEmail) async {
+    final response = await _makeRequest('/long-term-goals/archived', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => LongTermGoal.fromJson(json))
@@ -365,10 +375,11 @@ class ApiService {
     throw Exception('Failed to load archived long term goals');
   }
   
-  Future<LongTermGoal> archiveLongTermGoal(int id) async {
+  Future<LongTermGoal> archiveLongTermGoal(int id, String userEmail) async {
     final response = await _makeRequest(
       '/long-term-goals/$id/archive',
       method: 'POST',
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       return LongTermGoal.fromJson(response['data']);
@@ -376,10 +387,11 @@ class ApiService {
     throw Exception('Failed to archive long term goal');
   }
   
-  Future<LongTermGoal> restoreArchivedLongTermGoal(int id) async {
+  Future<LongTermGoal> restoreArchivedLongTermGoal(int id, String userEmail) async {
     final response = await _makeRequest(
       '/long-term-goals/$id/restore-archived',
       method: 'POST',
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       return LongTermGoal.fromJson(response['data']);
@@ -388,8 +400,8 @@ class ApiService {
   }
   
   // Problems
-  Future<List<Problem>> getProblems() async {
-    final response = await _makeRequest('/problems/');
+  Future<List<Problem>> getProblems(String userEmail) async {
+    final response = await _makeRequest('/problems/', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => Problem.fromJson(json))
@@ -402,6 +414,7 @@ class ApiService {
     String title,
     String? description,
     String? category,
+    String userEmail,
   ) async {
     final response = await _makeRequest(
       '/problems/',
@@ -410,6 +423,7 @@ class ApiService {
         'title': title,
         if (description != null) 'description': description,
         if (category != null) 'category': category,
+        'user_email': userEmail,
       },
     );
     if (response['success']) {
@@ -424,8 +438,9 @@ class ApiService {
     String? description,
     String? category,
     String? status,
+    required String userEmail,
   }) async {
-    final body = <String, dynamic>{};
+    final body = <String, dynamic>{'user_email': userEmail};
     if (title != null) body['title'] = title;
     if (description != null) body['description'] = description;
     if (category != null) body['category'] = category;
@@ -442,10 +457,11 @@ class ApiService {
     throw Exception('Failed to update problem');
   }
   
-  Future<void> deleteProblem(int id) async {
+  Future<void> deleteProblem(int id, String userEmail) async {
     final response = await _makeRequest(
       '/problems/$id',
       method: 'DELETE',
+      queryParams: {'user_email': userEmail},
     );
     if (!response['success']) {
       throw Exception('Failed to delete problem');
@@ -467,26 +483,44 @@ class ApiService {
   }
   
   // Daily Problem Logging
-  Future<List<DailyProblemLog>> getDailyProblemLogs() async {
-    final response = await _makeRequest('/daily-problem-logs/');
+  Future<List<DailyProblemLog>> getDailyProblemLogs({String? userEmail}) async {
+    print('🔄 API: Getting daily problem logs for user: $userEmail');
+    final queryParams = <String, String>{};
+    if (userEmail != null) {
+      queryParams['user_email'] = userEmail;
+    }
+    
+    final response = await _makeRequest('/problems/logs', queryParams: queryParams);
+    print('✅ API: Daily problem logs response: ${response['success']} with ${response['data']?.length ?? 0} logs');
     if (response['success']) {
-      return (response['data'] as List)
+      final logs = (response['data'] as List)
           .map((json) => DailyProblemLog.fromJson(json))
           .toList();
+      print('✅ API: Parsed ${logs.length} daily problem logs');
+      for (var log in logs) {
+        print('📋 API Log: Problem ${log.problemId}, Date: ${log.date}, Faced: ${log.faced}');
+      }
+      return logs;
     }
     throw Exception('Failed to load daily problem logs');
   }
   
-  Future<DailyProblemLog> logDailyProblem(int problemId, DateTime date, bool faced, [int intensity = 0]) async {
+  Future<DailyProblemLog> logDailyProblem(int problemId, DateTime date, bool faced, [int intensity = 0, String? userEmail]) async {
+    final body = {
+      'problem_id': problemId,
+      'date': '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+      'faced': faced,
+      'intensity': intensity,
+    };
+    
+    if (userEmail != null) {
+      body['user_email'] = userEmail;
+    }
+    
     final response = await _makeRequest(
-      '/daily-problem-logs/',
+      '/problems/logs',
       method: 'POST',
-      body: {
-        'problem_id': problemId,
-        'date': '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-        'faced': faced,
-        'intensity': intensity,
-      },
+      body: body,
     );
     if (response['success']) {
       return DailyProblemLog.fromJson(response['data']);
@@ -837,19 +871,19 @@ class ApiService {
   }
 
   // Todo Items
-  Future<List<TodoItem>> getTodoItems() async {
-    final response = await _makeRequest('/todo-items/');
+  Future<List<TodoItem>> getTodoItems(String userEmail) async {
+    final response = await _makeRequest('/todo-items/', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List).map((json) => TodoItem.fromJson(json)).toList();
     }
     throw Exception('Failed to load todo items');
   }
   
-  Future<TodoItem> createTodoItem(String content) async {
+  Future<TodoItem> createTodoItem(String content, String userEmail) async {
     final response = await _makeRequest(
       '/todo-items/',
       method: 'POST',
-      body: {'content': content},
+      body: {'content': content, 'user_email': userEmail},
     );
     if (response['success']) {
       return TodoItem.fromJson(response['data']);
@@ -857,8 +891,8 @@ class ApiService {
     throw Exception('Failed to create todo item');
   }
   
-  Future<TodoItem> updateTodoItem(int todoId, {String? content, bool? completed}) async {
-    final body = <String, dynamic>{};
+  Future<TodoItem> updateTodoItem(int todoId, {String? content, bool? completed, required String userEmail}) async {
+    final body = <String, dynamic>{'user_email': userEmail};
     if (content != null) body['content'] = content;
     if (completed != null) body['completed'] = completed;
     
@@ -873,8 +907,8 @@ class ApiService {
     throw Exception('Failed to update todo item');
   }
   
-  Future<void> deleteTodoItem(int todoId) async {
-    final response = await _makeRequest('/todo-items/$todoId', method: 'DELETE');
+  Future<void> deleteTodoItem(int todoId, String userEmail) async {
+    final response = await _makeRequest('/todo-items/$todoId', method: 'DELETE', queryParams: {'user_email': userEmail});
     if (!response['success']) {
       throw Exception('Failed to delete todo item');
     }
