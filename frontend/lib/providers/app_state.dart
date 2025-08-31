@@ -940,20 +940,34 @@ class AppState extends ChangeNotifier {
     try {
       setLoading(true);
       
+      // Get Google ID token from Firebase
       UserCredential? result = await _authService.signInWithGoogle();
       
       if (result != null && result.user != null) {
-        _isAuthenticated = true;
-        _isCheckingAuth = false;
-        _userEmail = result.user!.email;
-        _userName = result.user!.displayName ?? result.user!.email?.split('@')[0];
-        _userProfilePicture = result.user!.photoURL;
+        // Get the ID token
+        String? idToken = await result.user!.getIdToken();
         
-        // Save user data to database
-        await _saveUserToDatabase(result.user!);
-        
-        notifyListeners();
-        return true;
+        if (idToken != null) {
+          // Send ID token to Flask backend
+          final response = await _apiService.googleLogin(idToken);
+          
+          if (response['success'] == true) {
+            _isAuthenticated = true;
+            _isCheckingAuth = false;
+            _userEmail = result.user!.email;
+            _userName = response['user']?['display_name'] ?? result.user!.displayName ?? result.user!.email?.split('@')[0];
+            _userProfilePicture = result.user!.photoURL;
+            
+            notifyListeners();
+            return true;
+          } else {
+            setError('Google login failed: ${response['error'] ?? 'Unknown error'}');
+            return false;
+          }
+        } else {
+          setError('Failed to get Google ID token');
+          return false;
+        }
       }
       return false;
     } catch (e) {

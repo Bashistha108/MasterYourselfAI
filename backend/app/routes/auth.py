@@ -5,9 +5,11 @@ import string
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Blueprint, request, jsonify, render_template_string
+from flask import Blueprint, request, jsonify, render_template_string, url_for, redirect
 from flask_cors import cross_origin
 from app import db
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -531,4 +533,68 @@ def login():
         
     except Exception as e:
         print(f"❌ Error in login: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@auth_bp.route('/google-login', methods=['POST'])
+def google_login():
+    """Login with Google OAuth token"""
+    try:
+        data = request.get_json()
+        id_token_google = data.get('idToken')
+        
+        if not id_token_google:
+            return jsonify({'error': 'Google ID token is required'}), 400
+        
+        # Verify the Google ID token
+        try:
+            # Get Google Client ID from environment
+            google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+            if not google_client_id:
+                return jsonify({'error': 'Google Client ID not configured'}), 500
+            
+            # Verify the token
+            idinfo = id_token.verify_oauth2_token(
+                id_token_google, 
+                google_requests.Request(), 
+                google_client_id
+            )
+            
+            # Get user info from token
+            email = idinfo['email']
+            name = idinfo.get('name', email.split('@')[0])
+            picture = idinfo.get('picture')
+            
+            print(f"✅ Google token verified for: {email}")
+            
+        except Exception as e:
+            print(f"❌ Google token verification failed: {e}")
+            return jsonify({'error': 'Invalid Google token'}), 401
+        
+        # Find or create user in database
+        from app.models.user import User
+        
+        user = User.get_by_email(email)
+        if not user:
+            # Create new user with Google info
+            user = User.create_user(
+                email=email, 
+                password=None,  # No password for Google users
+                display_name=name
+            )
+            print(f"✅ Created new Google user: {email}")
+        else:
+            # Update user info if needed
+            if not user.display_name and name:
+                user.display_name = name
+                db.session.commit()
+            print(f"✅ Google login successful for existing user: {email}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Google login successful',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in google_login: {e}")
         return jsonify({'error': 'Internal server error'}), 500

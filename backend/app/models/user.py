@@ -8,7 +8,7 @@ class User(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=True)  # Nullable for Google users
     display_name = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -20,6 +20,8 @@ class User(db.Model):
     
     def check_password(self, password):
         """Check if password is correct"""
+        if not self.password_hash:
+            return False  # Google users don't have passwords
         return check_password_hash(self.password_hash, password)
     
     @classmethod
@@ -28,10 +30,11 @@ class User(db.Model):
         return cls.query.filter_by(email=email).first()
     
     @classmethod
-    def create_user(cls, email, password, display_name=None):
+    def create_user(cls, email, password=None, display_name=None):
         """Create a new user"""
         user = cls(email=email, display_name=display_name)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
         db.session.add(user)
         db.session.commit()
         return user

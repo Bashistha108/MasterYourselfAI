@@ -972,6 +972,17 @@ class ApiService {
     return response;
   }
 
+  Future<Map<String, dynamic>> googleLogin(String idToken) async {
+    final response = await _makeRequest(
+      '/auth/google-login',
+      method: 'POST',
+      body: {
+        'idToken': idToken,
+      },
+    );
+    return response;
+  }
+
   // Password Reset
   Future<bool> sendPasswordResetEmail(String email) async {
     final response = await _makeRequest(
