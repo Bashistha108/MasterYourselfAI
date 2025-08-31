@@ -26,21 +26,30 @@ except Exception as e:
 def get_ai_challenges():
     """Get AI challenges for a user"""
     try:
-        user_id = request.args.get('user_id')
-        print(f"🔍 Getting AI challenges for user: {user_id}")
-        logger.info(f"🔍 Getting AI challenges for user: {user_id}")
+        user_email = request.args.get('user_email')
+        print(f"🔍 Getting AI challenges for user email: {user_email}")
+        logger.info(f"🔍 Getting AI challenges for user email: {user_email}")
         
-        if not user_id:
-            print("❌ No user_id provided in request")
-            logger.warning("❌ No user_id provided in request")
+        if not user_email:
+            print("❌ No user_email provided in request")
+            logger.warning("❌ No user_email provided in request")
             return jsonify({
                 'success': False,
-                'error': 'user_id is required'
+                'error': 'user_email is required'
             }), 400
         
-        challenges = AIChallenges.get_user_challenges(user_id)
-        print(f"✅ Found {len(challenges)} challenges for user {user_id}")
-        logger.info(f"✅ Found {len(challenges)} challenges for user {user_id}")
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        challenges = AIChallenges.get_user_challenges(user.id)
+        print(f"✅ Found {len(challenges)} challenges for user {user.id}")
+        logger.info(f"✅ Found {len(challenges)} challenges for user {user.id}")
         
         challenge_data = [challenge.to_dict() for challenge in challenges]
         for i, challenge in enumerate(challenge_data):
@@ -65,17 +74,26 @@ def get_ai_challenges():
 def get_today_challenge():
     """Get today's AI challenge for a user"""
     try:
-        user_id = request.args.get('user_id')
-        logger.info(f"🔍 Getting today's AI challenge for user: {user_id}")
+        user_email = request.args.get('user_email')
+        logger.info(f"🔍 Getting today's AI challenge for user: {user_email}")
         
-        if not user_id:
-            logger.warning("❌ No user_id provided in request")
+        if not user_email:
+            logger.warning("❌ No user_email provided in request")
             return jsonify({
                 'success': False,
-                'error': 'user_id is required'
+                'error': 'user_email is required'
             }), 400
         
-        challenge = AIChallenges.get_today_challenge(user_id)
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        challenge = AIChallenges.get_today_challenge(user.id)
         if challenge:
             logger.info(f"✅ Found today's challenge: {challenge.challenge_text}")
         else:
@@ -101,19 +119,28 @@ def get_today_challenge():
 def get_today_challenges():
     """Get all today's AI challenges for a user"""
     try:
-        user_id = request.args.get('user_id')
-        logger.info(f"🔍 Getting today's AI challenges for user: {user_id}")
+        user_email = request.args.get('user_email')
+        logger.info(f"🔍 Getting today's AI challenges for user: {user_email}")
         
-        if not user_id:
-            logger.warning("❌ No user_id provided in request")
+        if not user_email:
+            logger.warning("❌ No user_email provided in request")
             return jsonify({
                 'success': False,
-                'error': 'user_id is required'
+                'error': 'user_email is required'
             }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
         
         today = date.today()
         challenges = AIChallenges.query.filter_by(
-            user_id=user_id, 
+            user_id=user.id, 
             challenge_date=today
         ).order_by(AIChallenges.created_at.desc()).all()
         
@@ -137,24 +164,33 @@ def generate_ai_challenge():
     """Generate a new AI challenge for a user"""
     try:
         data = request.get_json()
-        user_id = data.get('user_id')
+        user_email = data.get('user_email')
         
-        if not user_id:
+        if not user_email:
             return jsonify({
                 'success': False,
-                'error': 'user_id is required'
+                'error': 'user_email is required'
             }), 400
         
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         # Check for daily reset
-        AIChallenges.ensure_daily_reset(user_id)
+        AIChallenges.ensure_daily_reset(user.id)
         
         # Check if user has already generated 3 challenges today
-        today_count = AIChallenges.get_today_regeneration_count(user_id)
+        today_count = AIChallenges.get_today_regeneration_count(user.id)
         if today_count >= 3:
             # Return all today's challenges when limit is reached
             today = date.today()
             challenges = AIChallenges.query.filter_by(
-                user_id=user_id, 
+                user_id=user.id, 
                 challenge_date=today
             ).order_by(AIChallenges.created_at.desc()).all()
             
@@ -167,7 +203,7 @@ def generate_ai_challenge():
             }), 200
         
         # Generate a single new challenge
-        challenge = generate_ai_challenge_for_user(user_id)
+        challenge = generate_ai_challenge_for_user(user.id)
         
         return jsonify({
             'success': True,

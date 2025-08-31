@@ -616,3 +616,42 @@ def google_login():
     except Exception as e:
         print(f"❌ Error in google_login: {e}")
         return jsonify({'error': 'Internal server error'}), 500
+
+
+@auth_bp.route('/signup', methods=['POST'])
+def signup():
+    """Create new user account"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        name = data.get('name')
+        
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        from app.models.user import User
+        
+        # Check if user already exists
+        existing_user = User.get_by_email(email)
+        if existing_user:
+            return jsonify({'error': 'User already exists'}), 400
+        
+        # Create new user
+        user = User.create_user(
+            email=email,
+            password=password,
+            display_name=name
+        )
+        
+        print(f"✅ Created new user: {email}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Account created successfully',
+            'user': user.to_dict()
+        }), 201
+        
+    except Exception as e:
+        print(f"❌ Error in signup: {e}")
+        return jsonify({'error': 'Internal server error'}), 500

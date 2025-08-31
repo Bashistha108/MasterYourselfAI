@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from app import db
 
@@ -8,6 +8,7 @@ class Problems(db.Model):
     __tablename__ = 'problems'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     weight = Column(Float, default=1.0)  # Base weight for intensity calculation
@@ -24,6 +25,7 @@ class Problems(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'name': self.name,
             'description': self.description,
             'weight': self.weight,

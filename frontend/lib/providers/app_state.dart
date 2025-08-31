@@ -599,17 +599,14 @@ class AppState extends ChangeNotifier {
       print('🔄 AppState: Current user: ${_authService.currentUser?.email ?? 'no email'}');
       print('🔄 AppState: Is authenticated: ${_authService.currentUser != null}');
       
-      if (userId.isEmpty) {
-        print('⚠️ AppState: No user ID available, using default user ID');
-        // Use the known user ID from the backend logs
-        final challenges = await _apiService.getAIChallenges('xEa3sbIn1dckGWwxcM5wBOKlcWE2');
-        print('✅ AppState: Received ${challenges.length} challenges from API with default user');
-        _aiChallenges = challenges;
+      if (_userEmail == null) {
+        print('⚠️ AppState: No user email available');
+        _aiChallenges = [];
         notifyListeners();
         return;
       }
       
-      final challenges = await _apiService.getAIChallenges(userId);
+      final challenges = await _apiService.getAIChallenges(_userEmail!);
       print('✅ AppState: Received ${challenges.length} challenges from API');
       for (var challenge in challenges) {
         print('📋 Challenge: ${challenge.challengeText} (Date: ${challenge.challengeDate})');
@@ -624,8 +621,12 @@ class AppState extends ChangeNotifier {
   
   Future<void> loadTodayAIChallenge() async {
     try {
-      print('🔄 AppState: Loading today\'s AI challenge for user: ${_authService.currentUser?.uid ?? 'no user'}');
-      final challenge = await _apiService.getTodayAIChallenge(_authService.currentUser?.uid ?? '');
+      print('🔄 AppState: Loading today\'s AI challenge for user: $_userEmail');
+      if (_userEmail == null) {
+        print('⚠️ AppState: No user email available');
+        return;
+      }
+      final challenge = await _apiService.getTodayAIChallenge(_userEmail!);
       if (challenge != null) {
         print('✅ AppState: Today\'s challenge: ${challenge.challengeText}');
         // Update or add today's challenge
@@ -649,7 +650,10 @@ class AppState extends ChangeNotifier {
   
   Future<Map<String, dynamic>> generateAIChallenge() async {
     try {
-      final result = await _apiService.generateAIChallenge(_authService.currentUser?.uid ?? '');
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final result = await _apiService.generateAIChallenge(_userEmail!);
       
       if (result['limit_reached'] == true) {
         // Limit reached, return all today's challenges
@@ -674,7 +678,10 @@ class AppState extends ChangeNotifier {
   
   Future<List<AIChallenge>> getTodayAIChallenges() async {
     try {
-      return await _apiService.getTodayAIChallenges(_authService.currentUser?.uid ?? '');
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      return await _apiService.getTodayAIChallenges(_userEmail!);
     } catch (e) {
       setError('Failed to load today\'s AI challenges: $e');
       throw e;
@@ -1003,26 +1010,20 @@ class AppState extends ChangeNotifier {
     try {
       setLoading(true);
       
-      UserCredential? result = await _authService.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-        displayName: name,
-      );
+      final response = await _apiService.signup(email, password, name);
       
-      if (result != null && result.user != null) {
+      if (response['success'] == true) {
         _isAuthenticated = true;
         _isCheckingAuth = false;
-        _userEmail = result.user!.email;
-        _userName = result.user!.displayName ?? name;
-        _userProfilePicture = result.user!.photoURL;
-        
-        // Save user data to database
-        await _saveUserToDatabase(result.user!);
+        _userEmail = email;
+        _userName = name;
         
         notifyListeners();
         return true;
+      } else {
+        setError('Signup failed: ${response['error'] ?? 'Unknown error'}');
+        return false;
       }
-      return false;
     } catch (e) {
       setError('Signup failed: ${e.toString()}');
       return false;

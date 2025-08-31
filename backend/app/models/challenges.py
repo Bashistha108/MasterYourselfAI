@@ -8,6 +8,7 @@ class Challenges(db.Model):
     __tablename__ = 'challenges'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     goal_id = Column(Integer, nullable=False)  # ID of weekly or long-term goal
     goal_type = Column(String(20), nullable=False)  # 'weekly' or 'long_term'
     description = Column(Text, nullable=False)
@@ -32,6 +33,7 @@ class Challenges(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'goal_id': self.goal_id,
             'goal_type': self.goal_type,
             'description': self.description,

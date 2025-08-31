@@ -15,6 +15,9 @@ import 'package:master_yourself_ai/models/email.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5000/api';
+
+  // For production
+  // static const String baseUrl = 'https://masteryourselfai.onrender.com/api';
   
   // Helper method for making HTTP requests
   Future<Map<String, dynamic>> _makeRequest(
@@ -491,9 +494,9 @@ class ApiService {
   }
   
   // AI Challenges
-  Future<List<AIChallenge>> getAIChallenges(String userId) async {
-    print('🔄 API: Getting AI challenges for user: $userId');
-    final response = await _makeRequest('/ai-challenges/', queryParams: {'user_id': userId});
+  Future<List<AIChallenge>> getAIChallenges(String userEmail) async {
+    print('🔄 API: Getting AI challenges for user: $userEmail');
+    final response = await _makeRequest('/ai-challenges/', queryParams: {'user_email': userEmail});
     print('✅ API: Received response: ${response['success']} with ${response['data']?.length ?? 0} challenges');
     if (response['success']) {
       final challenges = (response['data'] as List)
@@ -505,9 +508,9 @@ class ApiService {
     throw Exception('Failed to load AI challenges');
   }
   
-  Future<AIChallenge?> getTodayAIChallenge(String userId) async {
-    print('🔄 API: Getting today\'s AI challenge for user: $userId');
-    final response = await _makeRequest('/ai-challenges/today', queryParams: {'user_id': userId});
+  Future<AIChallenge?> getTodayAIChallenge(String userEmail) async {
+    print('🔄 API: Getting today\'s AI challenge for user: $userEmail');
+    final response = await _makeRequest('/ai-challenges/today', queryParams: {'user_email': userEmail});
     print('✅ API: Today\'s challenge response: ${response['success']}');
     if (response['success']) {
       if (response['data'] != null) {
@@ -522,9 +525,9 @@ class ApiService {
     throw Exception('Failed to load today\'s AI challenge');
   }
   
-  Future<List<AIChallenge>> getTodayAIChallenges(String userId) async {
-    print('🔄 API: Getting today\'s AI challenges for user: $userId');
-    final response = await _makeRequest('/ai-challenges/today-challenges', queryParams: {'user_id': userId});
+  Future<List<AIChallenge>> getTodayAIChallenges(String userEmail) async {
+    print('🔄 API: Getting today\'s AI challenges for user: $userEmail');
+    final response = await _makeRequest('/ai-challenges/today-challenges', queryParams: {'user_email': userEmail});
     print('✅ API: Today\'s challenges response: ${response['success']} with ${response['data']?.length ?? 0} challenges');
     if (response['success']) {
       final challenges = (response['data'] as List)
@@ -536,11 +539,11 @@ class ApiService {
     throw Exception('Failed to load today\'s AI challenges');
   }
   
-  Future<Map<String, dynamic>> generateAIChallenge(String userId) async {
+  Future<Map<String, dynamic>> generateAIChallenge(String userEmail) async {
     final response = await _makeRequest(
       '/ai-challenges/generate',
       method: 'POST',
-      body: {'user_id': userId},
+      body: {'user_email': userEmail},
     );
     if (response['success']) {
       if (response['limit_reached'] == true) {
@@ -957,6 +960,20 @@ class ApiService {
     if (!response['success']) {
       throw Exception('Failed to add admin reply');
     }
+  }
+
+
+   Future<Map<String, dynamic>> signup(String email, String password, String name) async {
+  final response = await _makeRequest(
+    '/auth/signup',
+    method: 'POST',
+    body: {
+      'email': email,
+      'password': password,
+      'name': name,
+    },
+  );
+  return response;
   }
 
   // Authentication

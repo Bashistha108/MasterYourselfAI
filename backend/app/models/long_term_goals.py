@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, CheckConstraint, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, CheckConstraint, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from app import db
 
@@ -8,6 +8,7 @@ class LongTermGoals(db.Model):
     __tablename__ = 'long_term_goals'
     
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     start_date = Column(DateTime, nullable=True)
@@ -26,6 +27,7 @@ class LongTermGoals(db.Model):
         """Convert to dictionary for API response"""
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'title': self.title,
             'description': self.description,
             'start_date': self.start_date.strftime('%Y-%m-%d') if self.start_date else None,

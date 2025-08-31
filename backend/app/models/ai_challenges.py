@@ -8,7 +8,7 @@ class AIChallenges(db.Model):
     __tablename__ = 'ai_challenges'
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(String(100), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     challenge_text = Column(Text, nullable=False)  # Single challenge text
     challenge_date = Column(Date, nullable=False, default=date.today)
     completed = Column(Boolean, default=False)

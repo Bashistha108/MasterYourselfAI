@@ -1,52 +1,30 @@
 import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from datetime import datetime
 
 class Config:
     """Base configuration class"""
+    
+    # Basic Flask configuration
     SECRET_KEY = os.environ.get('SECRET_KEY')
-
-    # Get the absolute path to the backend directory (where config.py is located)
+    
+    # Directory configuration
     BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
-    
-    # Get the absolute path to the project root (parent of backend directory)
     PROJECT_ROOT = os.path.dirname(BACKEND_DIR)
-    
-    # Full path to database file - use project root to ensure consistency
     DB_PATH = os.path.join(PROJECT_ROOT, 'master_yourself_ai.db')
     
-    # Ensure the directory containing the database exists
-    db_dir = os.path.dirname(DB_PATH)
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
-
-    # Database configuration
-    # Priority: PostgreSQL (Render) > MySQL > SQLite
-    
-    # Check for Render's DATABASE_URL first (PostgreSQL)
+    # PostgreSQL configuration
     DATABASE_URL = os.environ.get('DATABASE_URL')
-    
-    # Manual PostgreSQL configuration
     POSTGRES_HOST = os.environ.get('POSTGRES_HOST')
     POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
     POSTGRES_USER = os.environ.get('POSTGRES_USER')
     POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD')
     POSTGRES_DATABASE = os.environ.get('POSTGRES_DATABASE')
     
-    # MySQL configuration (fallback)
-    MYSQL_HOST = os.environ.get('MYSQL_HOST')
-    MYSQL_PORT = os.environ.get('MYSQL_PORT', '3306')
-    MYSQL_USER = os.environ.get('MYSQL_USER')
-    MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD')
-    MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE')
-    
     # SQLAlchemy configuration
     if DATABASE_URL:
         # Render provides DATABASE_URL for PostgreSQL
         db_url = DATABASE_URL
-        # Use psycopg2-binary instead of pg8000 for better compatibility
+        # Convert to psycopg2 format
         db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://')
         SQLALCHEMY_DATABASE_URI = db_url
         print(f"Using Render PostgreSQL database with psycopg2")
@@ -56,14 +34,8 @@ class Config:
         encoded_password = quote_plus(POSTGRES_PASSWORD or '')
         SQLALCHEMY_DATABASE_URI = f"postgresql://{POSTGRES_USER}:{encoded_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}"
         print(f"Using PostgreSQL database: {POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DATABASE}")
-    elif all([MYSQL_HOST, MYSQL_USER, MYSQL_DATABASE]):
-        # Use MySQL - URL encode the password to handle special characters
-        from urllib.parse import quote_plus
-        encoded_password = quote_plus(MYSQL_PASSWORD or '')
-        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{MYSQL_USER}:{encoded_password}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
-        print(f"Using MySQL database: {MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}")
     else:
-        # Use SQLite as fallback
+        # Fallback to SQLite for local development
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.abspath(DB_PATH)}"
         print(f"Using SQLite database: {os.path.abspath(DB_PATH)}")
     
