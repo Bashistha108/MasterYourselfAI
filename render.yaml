@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: master-yourself-ai-backend
+    env: python
+    buildCommand: |
+      python3.11 -m pip install --upgrade pip
+      python3.11 -m pip install -r backend/requirements.txt
+    startCommand: python3.11 -m gunicorn backend.run:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.7
