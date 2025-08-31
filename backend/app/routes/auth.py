@@ -54,7 +54,7 @@ def send_reset_email(email, reset_token):
         # Create reset links
         app_reset_link = f"masteryourselfai://reset-password?token={reset_token}"
         # Use localhost for testing
-        web_reset_link = f"http://localhost:5000/reset-password-page?token={reset_token}"
+        web_reset_link = f"https://masteryourselfai.onrender.com/reset-password-page?token={reset_token}"
         
         # Email body
         body = f"""
