@@ -2,8 +2,13 @@ services:
   - type: web
     name: master-yourself-ai-backend
     env: python
-    buildCommand: ./build.sh
-    startCommand: python3.11 -m gunicorn backend.run:app --bind 0.0.0.0:$PORT
+    buildCommand: |
+      cd backend
+      chmod +x build.sh
+      ./build.sh
+    startCommand: |
+      cd backend
+      ./start.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
