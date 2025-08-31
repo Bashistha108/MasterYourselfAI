@@ -104,6 +104,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _googleLogin() async {
+    print("_googleLogin method called!");
     setState(() {
       _isLoading = true;
     });
@@ -478,7 +479,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               Container(
                                 height: 55,
                                 child: OutlinedButton.icon(
-                                  onPressed: _isLoading ? null : _googleLogin,
+                                  onPressed: _isLoading ? null : () {
+                                    print("Google button pressed!");
+                                    _googleLogin();
+                                  },
                                   icon: Icon(
                                     Icons.g_mobiledata,
                                     size: 24,
