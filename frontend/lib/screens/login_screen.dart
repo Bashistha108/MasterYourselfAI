@@ -105,13 +105,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   Future<void> _googleLogin() async {
     print("_googleLogin method called!");
+    print("Starting Google login process...");
     setState(() {
       _isLoading = true;
     });
     
     try {
+      print("Calling appState.googleLogin()...");
       final appState = context.read<AppState>();
       final success = await appState.googleLogin();
+      print("appState.googleLogin() result: $success");
       
       if (success && mounted) {
         // Navigate to dashboard
@@ -477,14 +480,18 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               
                               // Google Login Button
                               GestureDetector(
-                                onTap: _isLoading ? null : () {
+                                onTap: () {
                                   print("Google button pressed!");
-                                  _googleLogin();
+                                  if (!_isLoading) {
+                                    _googleLogin();
+                                  } else {
+                                    print("Google button disabled - loading in progress");
+                                  }
                                 },
                                 child: Container(
                                   height: 55,
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: _isLoading ? Colors.grey.shade200 : Colors.white,
                                     border: Border.all(color: Colors.grey.shade300),
                                     borderRadius: BorderRadius.circular(15),
                                   ),
@@ -502,7 +509,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                         style: TextStyle(
                                           fontSize: MediaQuery.of(context).size.width * 0.04,
                                           fontWeight: FontWeight.w600,
-                                          color: Colors.grey.shade700,
+                                          color: _isLoading ? Colors.grey.shade500 : Colors.grey.shade700,
                                         ),
                                       ),
                                     ],
