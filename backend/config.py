@@ -51,8 +51,6 @@ class Config:
             db_url += '&sslmode=require'
         else:
             db_url += '?sslmode=require'
-        # Convert to psycopg3 format
-        db_url = db_url.replace('postgresql://', 'postgresql+psycopg://')
         SQLALCHEMY_DATABASE_URI = db_url
         print(f"Using Render PostgreSQL database with psycopg3 and SSL")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
