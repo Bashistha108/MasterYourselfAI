@@ -4,11 +4,29 @@ import 'package:master_yourself_ai/providers/app_state.dart';
 import 'package:master_yourself_ai/screens/login_screen.dart';
 import 'package:master_yourself_ai/screens/main_screen.dart';
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
+  @override
+  _AuthWrapperState createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize auth state when widget is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AppState>().checkAuthState();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
+        print('🔍 AuthWrapper: isCheckingAuth=${appState.isCheckingAuth}, isAuthenticated=${appState.isAuthenticated}');
+        
         // Show loading screen while checking auth state
         if (appState.isCheckingAuth) {
           return Scaffold(
@@ -72,8 +90,10 @@ class AuthWrapper extends StatelessWidget {
 
         // Return appropriate screen based on authentication state
         if (appState.isAuthenticated) {
+          print('🔍 User is authenticated, showing MainScreen');
           return MainScreen();
         } else {
+          print('🔍 User is NOT authenticated, showing LoginScreen');
           return LoginScreen();
         }
       },

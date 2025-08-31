@@ -90,14 +90,10 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) {
-        final appState = AppState();
-        appState.checkAuthState(); // This is now async but we don't need to await it here
-        return appState;
-      },
+    return ChangeNotifierProvider<AppState>(
+      create: (context) => AppState(),
       child: MaterialApp(
-        title: '',
+        title: 'Master Yourself AI',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -138,6 +134,7 @@ class _MyAppState extends State<MyApp> {
         ),
         home: AuthWrapper(),
         routes: {
+          '/main': (context) => MainScreen(),
           '/dashboard': (context) => DashboardScreen(),
           '/weekly-goals': (context) => WeeklyGoalsScreen(),
           '/long-term-goals': (context) => LongTermGoalsScreen(),

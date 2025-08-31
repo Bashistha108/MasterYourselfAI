@@ -1142,8 +1142,11 @@ class AppState extends ChangeNotifier {
   // Check current auth state
   Future<void> checkAuthState() async {
     try {
+      print('🔍 Starting auth state check...');
+      
       // Set up auth state listener
       _authService.authStateChanges.listen((User? user) {
+        print('🔍 Auth state changed: ${user?.email ?? 'null'}');
         if (user != null) {
           _isAuthenticated = true;
           _userEmail = user.email;
@@ -1164,6 +1167,8 @@ class AppState extends ChangeNotifier {
       
       // Also check current user immediately
       final currentUser = _authService.currentUser;
+      print('🔍 Current user: ${currentUser?.email ?? 'null'}');
+      
       if (currentUser != null) {
         _isAuthenticated = true;
         _userEmail = currentUser.email;
@@ -1179,10 +1184,11 @@ class AppState extends ChangeNotifier {
         _userProfilePicture = null;
       }
     } catch (e) {
-      print('Error checking auth state: $e');
+      print('❌ Error checking auth state: $e');
       _isAuthenticated = false;
     } finally {
       _isCheckingAuth = false; // Done checking auth
+      print('🔍 Auth state check completed. Authenticated: $_isAuthenticated');
       notifyListeners();
     }
   }

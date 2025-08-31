@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:master_yourself_ai/providers/app_state.dart';
 import 'package:master_yourself_ai/screens/signup_screen.dart';
-import 'package:master_yourself_ai/screens/dashboard_screen.dart';
+import 'package:master_yourself_ai/screens/main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -72,10 +72,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       final success = await appState.login(_emailController.text, _passwordController.text);
       
       if (success && mounted) {
-        // Navigate to dashboard
+        // Navigate to main screen (which has dashboard and settings)
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          MaterialPageRoute(builder: (context) => MainScreen()),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,10 +117,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       print("appState.googleLogin() result: $success");
       
       if (success && mounted) {
-        // Navigate to dashboard
+        // Navigate to main screen (which has dashboard and settings)
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => DashboardScreen()),
+          MaterialPageRoute(builder: (context) => MainScreen()),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
