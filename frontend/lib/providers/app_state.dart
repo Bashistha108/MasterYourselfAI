@@ -1225,8 +1225,17 @@ class AppState extends ChangeNotifier {
   Future<bool> changePassword(String currentPassword, String newPassword) async {
     try {
       setLoading(true);
-      await _authService.changePassword(currentPassword, newPassword);
-      return true;
+      if (_userEmail == null) {
+        throw Exception('User email not available');
+      }
+      
+      final success = await _apiService.changePassword(_userEmail!, currentPassword, newPassword);
+      if (success) {
+        print('✅ Password changed successfully');
+        return true;
+      } else {
+        throw Exception('Failed to change password');
+      }
     } catch (e) {
       setError('Failed to change password: ${e.toString()}');
       return false;
