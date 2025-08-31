@@ -25,7 +25,8 @@ class Config:
         # Render provides DATABASE_URL for PostgreSQL
         db_url = DATABASE_URL
         # Convert to psycopg2 format
-        db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://')
+        # db_url = db_url.replace('postgresql://', 'postgresql+psycopg2://')
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://")
         SQLALCHEMY_DATABASE_URI = db_url
         print(f"Using Render PostgreSQL database with psycopg2")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
