@@ -1,0 +1,185 @@
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    display_name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE reset_tokens (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(120) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE weekly_goals (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    rating INTEGER,
+    completed BOOLEAN DEFAULT FALSE,
+    archived BOOLEAN DEFAULT FALSE,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE long_term_goals (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    target_date DATE,
+    completed BOOLEAN DEFAULT FALSE,
+    archived BOOLEAN DEFAULT FALSE,
+    start_date DATE,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE problems (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'active',
+    priority VARCHAR(20) DEFAULT 'medium',
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE daily_problem_logs (
+    id SERIAL PRIMARY KEY,
+    problem_id INTEGER REFERENCES problems(id),
+    user_id INTEGER REFERENCES users(id),
+    intensity INTEGER,
+    notes TEXT,
+    log_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE ai_challenges (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    challenge_type VARCHAR(50),
+    difficulty VARCHAR(20),
+    user_id INTEGER REFERENCES users(id),
+    completed BOOLEAN DEFAULT FALSE,
+    completion_date TIMESTAMP,
+    regeneration_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE goal_ratings (
+    id SERIAL PRIMARY KEY,
+    goal_id INTEGER NOT NULL,
+    goal_type VARCHAR(20) NOT NULL,
+    rating INTEGER,
+    notes TEXT,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE daily_goal_intensities (
+    id SERIAL PRIMARY KEY,
+    goal_id INTEGER NOT NULL,
+    goal_type VARCHAR(20) NOT NULL,
+    intensity INTEGER,
+    notes TEXT,
+    user_id INTEGER REFERENCES users(id),
+    log_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE weekly_goal_intensities (
+    id SERIAL PRIMARY KEY,
+    goal_id INTEGER NOT NULL,
+    goal_type VARCHAR(20) NOT NULL,
+    intensity INTEGER,
+    notes TEXT,
+    user_id INTEGER REFERENCES users(id),
+    week_start_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE quick_notes (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE todo_items (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    completed BOOLEAN DEFAULT FALSE,
+    priority VARCHAR(20) DEFAULT 'medium',
+    due_date DATE,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE quick_wins (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE goal_notes (
+    id SERIAL PRIMARY KEY,
+    goal_id INTEGER NOT NULL,
+    goal_type VARCHAR(20) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE emails (
+    id SERIAL PRIMARY KEY,
+    subject VARCHAR(255) NOT NULL,
+    user_email VARCHAR(120) NOT NULL,
+    content TEXT,
+    admin_reply TEXT,
+    status VARCHAR(20) DEFAULT 'pending',
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE feedback (
+    id SERIAL PRIMARY KEY,
+    user_email VARCHAR(120) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    body TEXT,
+    type VARCHAR(50),
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
