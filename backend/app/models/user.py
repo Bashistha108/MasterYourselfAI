@@ -1,6 +1,41 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
+
+class ResetToken(db.Model):
+    """Model for storing password reset tokens"""
+    __tablename__ = 'reset_tokens'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @classmethod
+    def create_token(cls, email, token, expires_in_hours=1):
+        """Create a new reset token"""
+        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+        reset_token = cls(token=token, email=email, expires_at=expires_at)
+        db.session.add(reset_token)
+        db.session.commit()
+        return reset_token
+    
+    @classmethod
+    def get_valid_token(cls, token):
+        """Get a valid token"""
+        reset_token = cls.query.filter_by(token=token).first()
+        if reset_token and reset_token.expires_at > datetime.utcnow():
+            return reset_token
+        return None
+    
+    @classmethod
+    def delete_token(cls, token):
+        """Delete a token"""
+        reset_token = cls.query.filter_by(token=token).first()
+        if reset_token:
+            db.session.delete(reset_token)
+            db.session.commit()
 
 class User(db.Model):
     """User model for storing user credentials"""

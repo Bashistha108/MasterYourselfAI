@@ -13,8 +13,8 @@ from google.auth.transport import requests as google_requests
 
 auth_bp = Blueprint('auth', __name__)
 
-# Store reset tokens temporarily (in production, use Redis or database)
-reset_tokens = {}
+# Import ResetToken model for database storage
+from app.models.user import ResetToken
 
 def generate_reset_token():
     """Generate a secure reset token"""
@@ -23,11 +23,8 @@ def generate_reset_token():
 def send_reset_email(email, reset_token):
     """Send password reset email"""
     try:
-        # Store token with expiration (1 hour)y
-        reset_tokens[reset_token] = {
-            'email': email,
-            'expires': datetime.now() + timedelta(hours=1)
-        }
+        # Store token in database with expiration (1 hour)
+        ResetToken.create_token(email, reset_token, expires_in_hours=1)
         
         # Email configuration
         smtp_server = "smtp.gmail.com"
@@ -461,17 +458,12 @@ def reset_password():
         if not token or not new_password:
             return jsonify({'error': 'Token and new password are required'}), 400
         
-        # Validate token
-        if token not in reset_tokens:
+        # Validate token from database
+        reset_token = ResetToken.get_valid_token(token)
+        if not reset_token:
             return jsonify({'error': 'Invalid or expired reset token'}), 400
         
-        token_data = reset_tokens[token]
-        if datetime.now() > token_data['expires']:
-            # Remove expired token
-            del reset_tokens[token]
-            return jsonify({'error': 'Reset token has expired'}), 400
-        
-        email = token_data['email']
+        email = reset_token.email
         
         # Find or create user in database
         from app.models.user import User
@@ -489,8 +481,8 @@ def reset_password():
         
         print(f"🔐 Password reset completed successfully!")
         
-        # Remove used token
-        del reset_tokens[token]
+        # Remove used token from database
+        ResetToken.delete_token(token)
         
         return jsonify({
             'success': True,
