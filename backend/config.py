@@ -51,8 +51,10 @@ class Config:
             db_url += '&sslmode=require'
         else:
             db_url += '?sslmode=require'
+        # Convert to pg8000 format
+        db_url = db_url.replace('postgresql://', 'postgresql+pg8000://')
         SQLALCHEMY_DATABASE_URI = db_url
-        print(f"Using Render PostgreSQL database with psycopg3 and SSL")
+        print(f"Using Render PostgreSQL database with pg8000 and SSL")
     elif all([POSTGRES_HOST, POSTGRES_USER, POSTGRES_DATABASE]):
         # Manual PostgreSQL configuration
         from urllib.parse import quote_plus
