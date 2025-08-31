@@ -105,7 +105,10 @@ class AppState extends ChangeNotifier {
   // Weekly Goals
   Future<void> loadWeeklyGoals() async {
     try {
-      final goals = await _apiService.getAllWeeklyGoals();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final goals = await _apiService.getAllWeeklyGoals(_userEmail!);
       _weeklyGoals = goals;
       notifyListeners();
     } catch (e) {
@@ -115,7 +118,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> loadArchivedWeeklyGoals() async {
     try {
-      final archivedGoals = await _apiService.getArchivedWeeklyGoals();
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final archivedGoals = await _apiService.getArchivedWeeklyGoals(_userEmail!);
       _archivedWeeklyGoals = archivedGoals;
       notifyListeners();
     } catch (e) {
@@ -125,7 +131,10 @@ class AppState extends ChangeNotifier {
   
   Future<void> createWeeklyGoal(String title, String? description) async {
     try {
-      final goal = await _apiService.createWeeklyGoal(title, description);
+      if (_userEmail == null) {
+        throw Exception('No user email available');
+      }
+      final goal = await _apiService.createWeeklyGoal(title, description, _userEmail!);
       _weeklyGoals.add(goal);
       notifyListeners();
     } catch (e) {

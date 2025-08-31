@@ -9,7 +9,23 @@ weekly_goals_bp = Blueprint('weekly_goals', __name__)
 def get_weekly_goals():
     """Get all weekly goals for current week"""
     try:
-        goals = WeeklyGoals.get_current_week_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = WeeklyGoals.get_current_week_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -24,7 +40,23 @@ def get_weekly_goals():
 def get_all_weekly_goals():
     """Get all weekly goals (current and past weeks)"""
     try:
-        goals = WeeklyGoals.get_all_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = WeeklyGoals.get_all_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -39,7 +71,23 @@ def get_all_weekly_goals():
 def get_completed_weekly_goals():
     """Get all completed weekly goals"""
     try:
-        goals = WeeklyGoals.get_completed_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = WeeklyGoals.get_completed_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -54,7 +102,23 @@ def get_completed_weekly_goals():
 def get_archived_weekly_goals():
     """Get all archived weekly goals"""
     try:
-        goals = WeeklyGoals.get_archived_goals()
+        user_email = request.args.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
+        goals = WeeklyGoals.get_archived_goals(user.id)
         return jsonify({
             'success': True,
             'data': [goal.to_dict() for goal in goals]
@@ -77,14 +141,31 @@ def create_weekly_goal():
                 'error': 'Title is required'
             }), 400
         
+        user_email = data.get('user_email')
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'error': 'user_email is required'
+            }), 400
+        
+        # Get database user ID from email
+        from app.models.user import User
+        user = User.get_by_email(user_email)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+        
         # Check if we can add more goals (max 3 active per week)
-        if not WeeklyGoals.can_add_goal():
+        if not WeeklyGoals.can_add_goal(user.id):
             return jsonify({
                 'success': False,
                 'error': 'Maximum 3 active weekly goals allowed per week. Complete some goals to add new ones.'
             }), 400
         
         goal = WeeklyGoals(
+            user_id=user.id,
             title=data['title'],
             description=data.get('description')
         )

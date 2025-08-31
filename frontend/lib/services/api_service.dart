@@ -71,8 +71,8 @@ class ApiService {
   }
   
   // Weekly Goals
-  Future<List<WeeklyGoal>> getWeeklyGoals() async {
-    final response = await _makeRequest('/weekly-goals/');
+  Future<List<WeeklyGoal>> getWeeklyGoals(String userEmail) async {
+    final response = await _makeRequest('/weekly-goals/', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => WeeklyGoal.fromJson(json))
@@ -81,13 +81,14 @@ class ApiService {
     throw Exception('Failed to load weekly goals');
   }
   
-  Future<WeeklyGoal> createWeeklyGoal(String title, String? description) async {
+  Future<WeeklyGoal> createWeeklyGoal(String title, String? description, String userEmail) async {
     final response = await _makeRequest(
       '/weekly-goals/',
       method: 'POST',
       body: {
         'title': title,
         if (description != null) 'description': description,
+        'user_email': userEmail,
       },
     );
     if (response['success']) {
@@ -130,8 +131,8 @@ class ApiService {
     }
   }
   
-  Future<List<WeeklyGoal>> getAllWeeklyGoals() async {
-    final response = await _makeRequest('/weekly-goals/all');
+  Future<List<WeeklyGoal>> getAllWeeklyGoals(String userEmail) async {
+    final response = await _makeRequest('/weekly-goals/all', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => WeeklyGoal.fromJson(json))
@@ -140,8 +141,8 @@ class ApiService {
     throw Exception('Failed to load all weekly goals');
   }
   
-  Future<List<WeeklyGoal>> getCompletedWeeklyGoals() async {
-    final response = await _makeRequest('/weekly-goals/completed');
+  Future<List<WeeklyGoal>> getCompletedWeeklyGoals(String userEmail) async {
+    final response = await _makeRequest('/weekly-goals/completed', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => WeeklyGoal.fromJson(json))
@@ -150,8 +151,8 @@ class ApiService {
     throw Exception('Failed to load completed weekly goals');
   }
   
-  Future<List<WeeklyGoal>> getArchivedWeeklyGoals() async {
-    final response = await _makeRequest('/weekly-goals/archived');
+  Future<List<WeeklyGoal>> getArchivedWeeklyGoals(String userEmail) async {
+    final response = await _makeRequest('/weekly-goals/archived', queryParams: {'user_email': userEmail});
     if (response['success']) {
       return (response['data'] as List)
           .map((json) => WeeklyGoal.fromJson(json))
