@@ -939,17 +939,23 @@ class AppState extends ChangeNotifier {
   Future<bool> googleLogin() async {
     try {
       setLoading(true);
+      print("🔄 Starting Google login process...");
       
       // Get Google ID token from Firebase
       UserCredential? result = await _authService.signInWithGoogle();
       
       if (result != null && result.user != null) {
+        print("✅ Firebase Google sign-in successful for: ${result.user!.email}");
+        
         // Get the ID token
         String? idToken = await result.user!.getIdToken();
         
         if (idToken != null) {
+          print("✅ Got ID token from Firebase");
+          
           // Send ID token to Flask backend
           final response = await _apiService.googleLogin(idToken);
+          print("🔄 Backend response: $response");
           
           if (response['success'] == true) {
             _isAuthenticated = true;
@@ -958,19 +964,34 @@ class AppState extends ChangeNotifier {
             _userName = response['user']?['display_name'] ?? result.user!.displayName ?? result.user!.email?.split('@')[0];
             _userProfilePicture = result.user!.photoURL;
             
+            print("✅ Google login successful for: $_userEmail");
             notifyListeners();
             return true;
           } else {
+            print("❌ Backend login failed: ${response['error'] ?? 'Unknown error'}");
+            // Sign out from Firebase if backend login failed
+            await _authService.signOut();
             setError('Google login failed: ${response['error'] ?? 'Unknown error'}');
             return false;
           }
         } else {
+          print("❌ Failed to get Google ID token");
+          await _authService.signOut();
           setError('Failed to get Google ID token');
           return false;
         }
+      } else {
+        print("❌ Firebase Google sign-in failed");
+        return false;
       }
-      return false;
     } catch (e) {
+      print("❌ Google login error: $e");
+      // Sign out from Firebase on error
+      try {
+        await _authService.signOut();
+      } catch (signOutError) {
+        print("❌ Error signing out: $signOutError");
+      }
       setError('Google login failed: ${e.toString()}');
       return false;
     } finally {

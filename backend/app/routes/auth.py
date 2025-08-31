@@ -535,9 +535,11 @@ def google_login():
         id_token_google = data.get('idToken')
         
         if not id_token_google:
+            print("❌ No ID token provided")
             return jsonify({'error': 'Google ID token is required'}), 400
         
         print(f"🔍 Processing Google login with token: {id_token_google[:20]}...")
+        print(f"🔍 Full token length: {len(id_token_google)}")
         
         # SIMPLE APPROACH: Trust Firebase and decode token manually
         import base64
@@ -570,27 +572,46 @@ def google_login():
         # Find or create user in database
         from app.models.user import User
         
+        print(f"🔍 Looking for user with email: {email}")
         user = User.get_by_email(email)
-        if not user:
-            # Create new user with Google info
-            user = User.create_user(
-                email=email, 
-                password=None,  # No password for Google users
-                display_name=name
-            )
-            print(f"✅ Created new Google user: {email}")
-        else:
-            # Update user info if needed
-            if not user.display_name and name:
-                user.display_name = name
-                db.session.commit()
-            print(f"✅ Google login successful for existing user: {email}")
         
-        return jsonify({
-            'success': True,
-            'message': 'Google login successful',
-            'user': user.to_dict()
-        }), 200
+        if not user:
+            print(f"🔍 User not found, creating new user: {email}")
+            # Create new user with Google info
+            try:
+                user = User.create_user(
+                    email=email, 
+                    password=None,  # No password for Google users
+                    display_name=name
+                )
+                print(f"✅ Created new Google user: {email}")
+            except Exception as create_error:
+                print(f"❌ Error creating user: {create_error}")
+                return jsonify({'error': 'Failed to create user'}), 500
+        else:
+            print(f"🔍 Found existing user: {email}")
+            # Update user info if needed
+            try:
+                if not user.display_name and name:
+                    user.display_name = name
+                    db.session.commit()
+                    print(f"✅ Updated display name for user: {email}")
+                print(f"✅ Google login successful for existing user: {email}")
+            except Exception as update_error:
+                print(f"❌ Error updating user: {update_error}")
+                return jsonify({'error': 'Failed to update user'}), 500
+        
+        try:
+            user_dict = user.to_dict()
+            print(f"✅ Returning user data: {user_dict}")
+            return jsonify({
+                'success': True,
+                'message': 'Google login successful',
+                'user': user_dict
+            }), 200
+        except Exception as dict_error:
+            print(f"❌ Error converting user to dict: {dict_error}")
+            return jsonify({'error': 'Failed to process user data'}), 500
         
     except Exception as e:
         print(f"❌ Error in google_login: {e}")
