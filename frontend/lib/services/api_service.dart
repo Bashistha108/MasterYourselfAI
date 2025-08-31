@@ -14,10 +14,10 @@ import 'package:master_yourself_ai/models/todo_item.dart';
 import 'package:master_yourself_ai/models/email.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
+  // static const String baseUrl = 'http://localhost:5000/api';
 
   // For production
-  // static const String baseUrl = 'https://masteryourselfai.onrender.com/api';
+  static const String baseUrl = 'https://masteryourselfai.onrender.com/api';
   
   // Helper method for making HTTP requests
   Future<Map<String, dynamic>> _makeRequest(
