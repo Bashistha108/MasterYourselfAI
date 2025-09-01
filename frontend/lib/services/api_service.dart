@@ -33,24 +33,24 @@ class ApiService {
       
       switch (method) {
         case 'GET':
-          response = await http.get(uri).timeout(Duration(seconds: 5));
+          response = await http.get(uri).timeout(Duration(seconds: 30));
           break;
         case 'POST':
           response = await http.post(
             uri,
             headers: {'Content-Type': 'application/json'},
             body: body != null ? json.encode(body) : null,
-          ).timeout(Duration(seconds: 5));
+          ).timeout(Duration(seconds: 30));
           break;
         case 'PUT':
           response = await http.put(
             uri,
             headers: {'Content-Type': 'application/json'},
             body: body != null ? json.encode(body) : null,
-          ).timeout(Duration(seconds: 5));
+          ).timeout(Duration(seconds: 30));
           break;
         case 'DELETE':
-          response = await http.delete(uri).timeout(Duration(seconds: 5));
+          response = await http.delete(uri).timeout(Duration(seconds: 30));
           break;
         default:
           throw Exception('Unsupported HTTP method: $method');
