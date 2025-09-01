@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:master_yourself_ai/providers/app_state.dart';
 import 'package:master_yourself_ai/screens/login_screen.dart';
 import 'package:master_yourself_ai/screens/dashboard_screen.dart';
+import 'package:master_yourself_ai/screens/privacy_policy_screen.dart';
+import 'package:master_yourself_ai/screens/terms_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -458,6 +461,15 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                                               color: Colors.purple.shade600,
                                               fontWeight: FontWeight.bold,
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => TermsScreen(),
+                                                  ),
+                                                );
+                                              },
                                           ),
                                           TextSpan(text: ' and '),
                                           TextSpan(
@@ -466,6 +478,15 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                                               color: Colors.purple.shade600,
                                               fontWeight: FontWeight.bold,
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => PrivacyPolicyScreen(),
+                                                  ),
+                                                );
+                                              },
                                           ),
                                         ],
                                       ),

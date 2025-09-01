@@ -14,7 +14,7 @@
       },
       "oauth_client": [
         {
-          "client_id": "1004680248723-d8u73vl1fd6pioj0a5gevj68mg2g9r2r.apps.googleusercontent.com",
+          "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -27,11 +27,11 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "1004680248723-d8u73vl1fd6pioj0a5gevj68mg2g9r2r.apps.googleusercontent.com",
+              "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "1004680248723-963216jjv0kh1oskm911uis35q5sc8h2.apps.googleusercontent.com",
+              "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.masteryourself.ai.masterYourselfAi"
