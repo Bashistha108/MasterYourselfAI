@@ -136,9 +136,9 @@ Based on the wireframes, the app features:
 - **Backend Dependencies**: Installed (Flask, SQLAlchemy, etc.)
 - **Frontend Dependencies**: Installed (Flutter, Provider, fl_chart, etc.)
 - **Virtual Environment**: Set up
-- **Database Setup**: In progress
-- **API Development**: Pending
-- **UI Development**: Pending
+- **Database Setup**: Completed
+- **API Development**: Completed
+- **UI Development**: Completed
 
 ---
 
