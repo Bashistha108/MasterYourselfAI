@@ -130,7 +130,7 @@ Based on the wireframes, the app features:
 8. Add notifications and gamification
 9. Testing and optimization
 
-## 🛠️ Current Status
+## Current Status
 
 - **Project Structure**: Complete
 - **Backend Dependencies**: Installed (Flask, SQLAlchemy, etc.)
