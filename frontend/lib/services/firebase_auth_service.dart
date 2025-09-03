@@ -7,9 +7,64 @@ class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
 
+  // Custom authentication state that persists independently
+  bool _customAuthenticated = false;
+  String? _customUserEmail;
+  String? _customUserName;
+  String? _customUserPhoto;
+
   // Initialize Firebase Auth with persistence
   FirebaseAuthService() {
     _initializeAuth();
+    _loadCustomAuthState();
+  }
+
+  // Load custom auth state from SharedPreferences
+  Future<void> _loadCustomAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedEmail = prefs.getString('user_email');
+      final storedName = prefs.getString('user_name');
+      final storedPhoto = prefs.getString('user_photo');
+      final storedTimestamp = prefs.getString('user_data_timestamp');
+      
+      if (storedEmail != null && storedTimestamp != null) {
+        final dataTime = DateTime.parse(storedTimestamp);
+        final now = DateTime.now();
+        final difference = now.difference(dataTime);
+        
+        // Consider data valid if less than 30 days old
+        if (difference.inDays < 30) {
+          _customAuthenticated = true;
+          _customUserEmail = storedEmail;
+          _customUserName = storedName ?? storedEmail.split('@')[0];
+          _customUserPhoto = storedPhoto;
+          
+          print('✅ Custom auth state loaded: $_customUserEmail');
+        } else {
+          print('⚠️ Stored data too old, clearing custom auth state');
+          await clearStoredUserData();
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading custom auth state: $e');
+    }
+  }
+
+  // Save custom auth state to SharedPreferences
+  Future<void> _saveCustomAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('custom_auth_state', _customAuthenticated.toString());
+      await prefs.setString('custom_user_email', _customUserEmail ?? '');
+      await prefs.setString('custom_user_name', _customUserName ?? '');
+      await prefs.setString('custom_user_photo', _customUserPhoto ?? '');
+      await prefs.setString('custom_auth_timestamp', DateTime.now().toIso8601String());
+      
+      print('✅ Custom auth state saved');
+    } catch (e) {
+      print('❌ Error saving custom auth state: $e');
+    }
   }
 
   void _initializeAuth() {
@@ -28,6 +83,13 @@ class FirebaseAuthService {
             _storeAuthToken(token);
             // Store user data immediately
             storeUserData(user);
+            
+            // Also update custom auth state
+            _customAuthenticated = true;
+            _customUserEmail = user.email;
+            _customUserName = user.displayName ?? user.email?.split('@')[0];
+            _customUserPhoto = user.photoURL;
+            _saveCustomAuthState();
           }
         }).catchError((e) {
           print('⚠️ Token refresh failed: $e');
@@ -35,6 +97,7 @@ class FirebaseAuthService {
       } else {
         print('🔍 User signed out');
         // Don't clear stored data immediately - wait for explicit sign out
+        // Keep custom auth state if we have valid stored data
       }
     });
 
@@ -88,15 +151,35 @@ class FirebaseAuthService {
     }
   }
 
-  // Get current user
-  User? get currentUser => _auth.currentUser;
+  // Get current user (prioritize custom auth state)
+  User? get currentUser {
+    if (_customAuthenticated && _customUserEmail != null) {
+      // Return a mock user object based on custom auth state
+      // This prevents the app from thinking the user is logged out
+      return null; // Will be handled by custom auth methods
+    }
+    return _auth.currentUser;
+  }
 
-  // Auth state changes stream
+  // Custom auth state getters
+  bool get isCustomAuthenticated => _customAuthenticated;
+  String? get customUserEmail => _customUserEmail;
+  String? get customUserName => _customUserName;
+  String? get customUserPhoto => _customUserPhoto;
+
+  // Auth state changes stream (combine Firebase and custom)
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Check if user is authenticated and token is valid
+  // Check if user is authenticated (prioritize custom auth state)
   Future<bool> isUserAuthenticated() async {
     try {
+      // First check custom auth state
+      if (_customAuthenticated && _customUserEmail != null) {
+        print('🔍 Custom auth state is active: $_customUserEmail');
+        return true;
+      }
+      
+      // Then check Firebase
       final user = _auth.currentUser;
       if (user != null) {
         // Check if token is valid and refresh if needed
@@ -111,6 +194,12 @@ class FirebaseAuthService {
       
       if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
         print('🔍 No Firebase user, but found valid stored data: $storedEmail');
+        // Restore custom auth state
+        _customAuthenticated = true;
+        _customUserEmail = storedEmail;
+        _customUserName = storedUserData['name'] ?? storedEmail.split('@')[0];
+        _customUserPhoto = storedUserData['photo'];
+        _saveCustomAuthState();
         return true;
       }
       
@@ -122,13 +211,29 @@ class FirebaseAuthService {
       final storedEmail = storedUserData['email'];
       final isDataValid = await isStoredUserDataValid();
       
-      return storedEmail != null && storedEmail.isNotEmpty && isDataValid;
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+        // Restore custom auth state
+        _customAuthenticated = true;
+        _customUserEmail = storedEmail;
+        _customUserName = storedUserData['name'] ?? storedEmail.split('@')[0];
+        _customUserPhoto = storedUserData['photo'];
+        _saveCustomAuthState();
+        return true;
+      }
+      
+      return false;
     }
   }
 
   // Force refresh user token and check authentication
   Future<bool> refreshUserToken() async {
     try {
+      // First check custom auth state
+      if (_customAuthenticated && _customUserEmail != null) {
+        print('✅ Custom auth state is active, no need to refresh token');
+        return true;
+      }
+      
       final user = _auth.currentUser;
       if (user != null) {
         // Force refresh the token
@@ -149,6 +254,12 @@ class FirebaseAuthService {
       
       if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
         print('✅ Can restore authentication from stored data: $storedEmail');
+        // Restore custom auth state
+        _customAuthenticated = true;
+        _customUserEmail = storedEmail;
+        _customUserName = storedUserData['name'] ?? storedEmail.split('@')[0];
+        _customUserPhoto = storedUserData['photo'];
+        _saveCustomAuthState();
         return true;
       }
       
@@ -160,13 +271,29 @@ class FirebaseAuthService {
       final storedEmail = storedUserData['email'];
       final isDataValid = await isStoredUserDataValid();
       
-      return storedEmail != null && storedEmail.isNotEmpty && isDataValid;
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+        // Restore custom auth state
+        _customAuthenticated = true;
+        _customUserEmail = storedEmail;
+        _customUserName = storedUserData['name'] ?? storedEmail.split('@')[0];
+        _customUserPhoto = storedUserData['photo'];
+        _saveCustomAuthState();
+        return true;
+      }
+      
+      return false;
     }
   }
 
-  // Get user with token refresh
+  // Get user with token refresh (prioritize custom auth state)
   Future<User?> getCurrentUserWithRefresh() async {
     try {
+      // First check custom auth state
+      if (_customAuthenticated && _customUserEmail != null) {
+        print('🔍 Custom auth state is active: $_customUserEmail');
+        return null; // Will be handled by custom auth methods
+      }
+      
       final user = _auth.currentUser;
       if (user != null) {
         // Refresh token to ensure it's valid
@@ -184,9 +311,13 @@ class FirebaseAuthService {
         // Try to get user info from stored data
         if (storedUserData['email'] != null) {
           print('✅ Restored user session: ${storedUserData['email']}');
-          // Return a mock user object with stored data
-          // This is a fallback when Firebase user is null but we have stored data
-          return null; // Will be handled by the calling code
+          // Restore custom auth state
+          _customAuthenticated = true;
+          _customUserEmail = storedEmail;
+          _customUserName = storedUserData['name'] ?? storedEmail.split('@')[0];
+          _customUserPhoto = storedUserData['photo'];
+          _saveCustomAuthState();
+          return null; // Will be handled by custom auth methods
         }
       }
       return null;

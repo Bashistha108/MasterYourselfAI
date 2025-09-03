@@ -16,6 +16,7 @@ import 'package:master_yourself_ai/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async'; // Added for Timer
 import 'package:flutter/material.dart'; // Added for AppLifecycleState
+import 'package:shared_preferences/shared_preferences.dart'; // Added for SharedPreferences
 
 class AppState extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -112,6 +113,19 @@ class AppState extends ChangeNotifier {
   Future<void> forceCheckAndRestoreSession() async {
     try {
       print('🔍 Force checking and restoring session...');
+      
+      // First check custom auth state
+      if (_authService.isCustomAuthenticated) {
+        print('🔍 Custom auth state is active, restoring from it...');
+        _isAuthenticated = true;
+        _userEmail = _authService.customUserEmail;
+        _userName = _authService.customUserName;
+        _userProfilePicture = _authService.customUserPhoto;
+        
+        await initializeApp();
+        notifyListeners();
+        return;
+      }
       
       // Check if we have a valid stored session
       final hasValidSession = await _authService.hasValidStoredSession();
@@ -1090,6 +1104,9 @@ class AppState extends ChangeNotifier {
           uid: response['user']?['id']?.toString(),
         );
         
+        // Also set custom auth state
+        await _setCustomAuthState(email, _userName!, null, response['user']?['id']?.toString());
+        
         notifyListeners();
         return true;
       } else {
@@ -1139,6 +1156,9 @@ class AppState extends ChangeNotifier {
               photo: _userProfilePicture,
               uid: result.user!.uid,
             );
+            
+            // Also set custom auth state
+            await _setCustomAuthState(_userEmail!, _userName!, _userProfilePicture, result.user!.uid);
             
             print("✅ Google login successful for: $_userEmail");
             notifyListeners();
@@ -1195,6 +1215,9 @@ class AppState extends ChangeNotifier {
           uid: response['user']?['id']?.toString(),
         );
         
+        // Also set custom auth state
+        await _setCustomAuthState(email, name, null, response['user']?['id']?.toString());
+        
         notifyListeners();
         return true;
       } else {
@@ -1208,6 +1231,24 @@ class AppState extends ChangeNotifier {
       setLoading(false);
     }
   }
+
+  // Helper method to set custom auth state
+  Future<void> _setCustomAuthState(String email, String name, String? photo, String? uid) async {
+    try {
+      // Store in SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('custom_auth_state', 'true');
+      await prefs.setString('custom_user_email', email);
+      await prefs.setString('custom_user_name', name);
+      if (photo != null) await prefs.setString('custom_user_photo', photo);
+      if (uid != null) await prefs.setString('custom_user_uid', uid);
+      await prefs.setString('custom_auth_timestamp', DateTime.now().toIso8601String());
+      
+      print('✅ Custom auth state set for: $email');
+    } catch (e) {
+      print('❌ Error setting custom auth state: $e');
+    }
+  }
   
   // Sign out
   Future<void> signOut() async {
@@ -1218,6 +1259,10 @@ class AppState extends ChangeNotifier {
       // Clear stored user data first
       await _authService.clearStoredUserData();
       print('✅ Stored user data cleared');
+      
+      // Clear custom auth state
+      await _clearCustomAuthState();
+      print('✅ Custom auth state cleared');
       
       // Sign out from Firebase
       await _authService.signOut();
@@ -1256,6 +1301,23 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Helper method to clear custom auth state
+  Future<void> _clearCustomAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('custom_auth_state');
+      await prefs.remove('custom_user_email');
+      await prefs.remove('custom_user_name');
+      await prefs.remove('custom_user_photo');
+      await prefs.remove('custom_user_uid');
+      await prefs.remove('custom_auth_timestamp');
+      
+      print('✅ Custom auth state cleared');
+    } catch (e) {
+      print('❌ Error clearing custom auth state: $e');
+    }
+  }
+
   // Check current auth state
   Future<void> checkAuthState() async {
     try {
@@ -1268,6 +1330,23 @@ class AppState extends ChangeNotifier {
       
       print('🔍 Has valid stored session: $hasValidStoredSession');
       print('🔍 Stored email: $storedEmail');
+      
+      // Check custom auth state first
+      if (_authService.isCustomAuthenticated) {
+        print('🔍 Custom auth state is active: ${_authService.customUserEmail}');
+        _isAuthenticated = true;
+        _userEmail = _authService.customUserEmail;
+        _userName = _authService.customUserName;
+        _userProfilePicture = _authService.customUserPhoto;
+        
+        // Initialize app data
+        await initializeApp();
+        
+        print('✅ User session restored from custom auth state');
+        _isCheckingAuth = false;
+        notifyListeners();
+        return;
+      }
       
       if (hasValidStoredSession && storedEmail != null) {
         print('🔍 Found valid stored session, restoring user: $storedEmail');
@@ -1763,6 +1842,48 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Force restore custom auth state
+  Future<void> forceRestoreCustomAuthState() async {
+    try {
+      print('🔍 Force restoring custom auth state...');
+      
+      final prefs = await SharedPreferences.getInstance();
+      final customAuthState = prefs.getString('custom_auth_state');
+      final customEmail = prefs.getString('custom_user_email');
+      final customName = prefs.getString('custom_user_name');
+      final customPhoto = prefs.getString('custom_user_photo');
+      final customTimestamp = prefs.getString('custom_auth_timestamp');
+      
+      if (customAuthState == 'true' && customEmail != null && customTimestamp != null) {
+        final dataTime = DateTime.parse(customTimestamp);
+        final now = DateTime.now();
+        final difference = now.difference(dataTime);
+        
+        // Consider data valid if less than 30 days old
+        if (difference.inDays < 30) {
+          print('🔍 Valid custom auth state found: $customEmail');
+          
+          _isAuthenticated = true;
+          _userEmail = customEmail;
+          _userName = customName ?? customEmail.split('@')[0];
+          _userProfilePicture = customPhoto;
+          
+          await initializeApp();
+          notifyListeners();
+          
+          print('✅ Custom auth state restored successfully');
+        } else {
+          print('⚠️ Custom auth state too old (${difference.inDays} days), clearing...');
+          await _clearCustomAuthState();
+        }
+      } else {
+        print('🔍 No valid custom auth state found');
+      }
+    } catch (e) {
+      print('❌ Error restoring custom auth state: $e');
+    }
+  }
+
   // Debug method to check current state
   Future<Map<String, dynamic>> debugCurrentState() async {
     try {
@@ -1827,6 +1948,19 @@ class AppState extends ChangeNotifier {
       print('  - isAuthenticated: $_isAuthenticated');
       print('  - userEmail: $_userEmail');
       print('  - userName: $_userName');
+      
+      // Check custom auth state
+      final prefs = await SharedPreferences.getInstance();
+      final customAuthState = prefs.getString('custom_auth_state');
+      final customEmail = prefs.getString('custom_user_email');
+      final customName = prefs.getString('custom_user_name');
+      final customTimestamp = prefs.getString('custom_auth_timestamp');
+      
+      print('🧪 Custom auth state:');
+      print('  - active: $customAuthState');
+      print('  - email: $customEmail');
+      print('  - name: $customName');
+      print('  - timestamp: $customTimestamp');
       
       // Check stored data
       final storedUserData = await _authService.getStoredUserData();

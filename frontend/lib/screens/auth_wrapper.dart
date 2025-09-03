@@ -26,6 +26,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
             context.read<AppState>().forceCheckAndRestoreSession();
           }
         });
+        
+        // Also try to restore custom auth state after another delay
+        Future.delayed(Duration(milliseconds: 1000), () {
+          if (mounted) {
+            print('🔍 AuthWrapper: Force restoring custom auth state...');
+            context.read<AppState>().forceRestoreCustomAuthState();
+          }
+        });
       }
     });
   }
