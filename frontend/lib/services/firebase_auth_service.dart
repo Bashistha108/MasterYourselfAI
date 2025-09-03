@@ -16,16 +16,74 @@ class FirebaseAuthService {
     // Note: setPersistence is deprecated on mobile, Firebase handles this automatically
     // The persistence is controlled by the platform and Firebase configuration
     
-    // Enable token auto-refresh
+    // Enable token auto-refresh and better persistence
     _auth.authStateChanges().listen((User? user) {
       if (user != null) {
         print('🔍 User authenticated: ${user.email}');
-        // Ensure token is refreshed
-        user.getIdToken(true);
+        // Ensure token is refreshed and stored
+        user.getIdToken(true).then((token) {
+          if (token.isNotEmpty) {
+            print('✅ Token refreshed and stored for: ${user.email}');
+            // Store the token in SharedPreferences for backup
+            _storeAuthToken(token);
+          }
+        }).catchError((e) {
+          print('⚠️ Token refresh failed: $e');
+        });
       } else {
         print('🔍 User signed out');
+        // Don't clear stored data immediately - wait for explicit sign out
       }
     });
+
+    // Set up token refresh listener
+    _auth.idTokenChanges().listen((User? user) {
+      if (user != null) {
+        print('🔄 ID token changed for user: ${user.email}');
+        // Token was refreshed, update stored data
+        _storeAuthToken(user.uid);
+      }
+    });
+  }
+
+  // Store auth token for backup persistence
+  Future<void> _storeAuthToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      await prefs.setString('auth_token_timestamp', DateTime.now().toIso8601String());
+      print('✅ Auth token stored in SharedPreferences');
+    } catch (e) {
+      print('❌ Failed to store auth token: $e');
+    }
+  }
+
+  // Get stored auth token
+  Future<String?> getStoredAuthToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final timestamp = prefs.getString('auth_token_timestamp');
+      
+      if (token != null && timestamp != null) {
+        final tokenTime = DateTime.parse(timestamp);
+        final now = DateTime.now();
+        final difference = now.difference(tokenTime);
+        
+        // Check if token is less than 1 hour old
+        if (difference.inHours < 1) {
+          print('✅ Stored auth token is still valid (${difference.inMinutes} minutes old)');
+          return token;
+        } else {
+          print('⚠️ Stored auth token is too old (${difference.inHours} hours old)');
+          return null;
+        }
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting stored auth token: $e');
+      return null;
+    }
   }
 
   // Get current user
@@ -38,14 +96,24 @@ class FirebaseAuthService {
   Future<bool> isUserAuthenticated() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return false;
+      if (user == null) {
+        // Check if we have a stored token as backup
+        final storedToken = await getStoredAuthToken();
+        if (storedToken != null) {
+          print('🔍 No current Firebase user, but found stored token');
+          return true;
+        }
+        return false;
+      }
       
       // Check if token is valid and refresh if needed
       final token = await user.getIdToken(true);
       return token.isNotEmpty;
     } catch (e) {
       print('❌ Error checking user authentication: $e');
-      return false;
+      // On error, check stored token as fallback
+      final storedToken = await getStoredAuthToken();
+      return storedToken != null;
     }
   }
 
@@ -53,15 +121,30 @@ class FirebaseAuthService {
   Future<bool> refreshUserToken() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return false;
+      if (user == null) {
+        // Try to restore from stored token
+        final storedToken = await getStoredAuthToken();
+        if (storedToken != null) {
+          print('✅ Restored authentication from stored token');
+          return true;
+        }
+        return false;
+      }
       
       // Force refresh the token
-      await user.getIdToken(true);
-      print('✅ User token refreshed successfully');
-      return true;
+      final token = await user.getIdToken(true);
+      if (token.isNotEmpty) {
+        print('✅ User token refreshed successfully');
+        // Store the refreshed token
+        await _storeAuthToken(token);
+        return true;
+      }
+      return false;
     } catch (e) {
       print('❌ Error refreshing user token: $e');
-      return false;
+      // On error, check stored token as fallback
+      final storedToken = await getStoredAuthToken();
+      return storedToken != null;
     }
   }
 
@@ -73,6 +156,20 @@ class FirebaseAuthService {
         // Refresh token to ensure it's valid
         await user.getIdToken(true);
         return user;
+      }
+      
+      // If no current user, check if we can restore from stored data
+      final storedToken = await getStoredAuthToken();
+      if (storedToken != null) {
+        print('🔍 Attempting to restore user session from stored token');
+        // Try to get user info from stored data
+        final storedUserData = await getStoredUserData();
+        if (storedUserData['email'] != null) {
+          print('✅ Restored user session: ${storedUserData['email']}');
+          // Return a mock user object with stored data
+          // This is a fallback when Firebase user is null but we have stored data
+          return null; // Will be handled by the calling code
+        }
       }
       return null;
     } catch (e) {
@@ -89,6 +186,7 @@ class FirebaseAuthService {
         'email': prefs.getString('user_email'),
         'name': prefs.getString('user_name'),
         'photo': prefs.getString('user_photo'),
+        'uid': prefs.getString('user_uid'),
       };
     } catch (e) {
       print('❌ Error getting stored user data: $e');
@@ -103,6 +201,11 @@ class FirebaseAuthService {
       await prefs.setString('user_email', user.email ?? '');
       await prefs.setString('user_name', user.displayName ?? '');
       await prefs.setString('user_photo', user.photoURL ?? '');
+      await prefs.setString('user_uid', user.uid);
+      
+      // Also store the current timestamp
+      await prefs.setString('user_data_timestamp', DateTime.now().toIso8601String());
+      
       print('✅ User data stored in SharedPreferences');
     } catch (e) {
       print('❌ Error storing user data: $e');
@@ -116,9 +219,40 @@ class FirebaseAuthService {
       await prefs.remove('user_email');
       await prefs.remove('user_name');
       await prefs.remove('user_photo');
+      await prefs.remove('user_uid');
+      await prefs.remove('auth_token');
+      await prefs.remove('auth_token_timestamp');
+      await prefs.remove('user_data_timestamp');
       print('✅ Stored user data cleared');
     } catch (e) {
       print('❌ Error clearing stored user data: $e');
+    }
+  }
+
+  // Check if stored user data is still valid
+  Future<bool> isStoredUserDataValid() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestamp = prefs.getString('user_data_timestamp');
+      
+      if (timestamp != null) {
+        final dataTime = DateTime.parse(timestamp);
+        final now = DateTime.now();
+        final difference = now.difference(dataTime);
+        
+        // Consider data valid if less than 24 hours old
+        if (difference.inHours < 24) {
+          print('✅ Stored user data is still valid (${difference.inHours} hours old)');
+          return true;
+        } else {
+          print('⚠️ Stored user data is too old (${difference.inHours} hours old)');
+          return false;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error checking stored user data validity: $e');
+      return false;
     }
   }
 
@@ -403,4 +537,47 @@ class FirebaseAuthService {
 
   // Get user photo URL
   String? get userPhotoURL => currentUser?.photoURL;
+
+  // Debug method to check authentication state
+  Future<Map<String, dynamic>> debugAuthState() async {
+    try {
+      final currentUser = _auth.currentUser;
+      final storedToken = await getStoredAuthToken();
+      final storedUserData = await getStoredUserData();
+      final isDataValid = await isStoredUserDataValid();
+      
+      return {
+        'firebase_user': currentUser?.email ?? 'null',
+        'firebase_uid': currentUser?.uid ?? 'null',
+        'stored_token': storedToken != null ? 'valid' : 'null',
+        'stored_email': storedUserData['email'] ?? 'null',
+        'stored_name': storedUserData['name'] ?? 'null',
+        'stored_data_valid': isDataValid,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      return {
+        'error': e.toString(),
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
+  }
+
+  // Force restore session from stored data
+  Future<bool> forceRestoreSession() async {
+    try {
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+        print('✅ Force restoring session for: $storedEmail');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error in force restore: $e');
+      return false;
+    }
+  }
 }

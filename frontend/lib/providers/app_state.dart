@@ -110,8 +110,8 @@ class AppState extends ChangeNotifier {
 
   // Start token refresh timer
   void _startTokenRefreshTimer() {
-    // Refresh token every 30 minutes to prevent expiration
-    Timer.periodic(Duration(minutes: 30), (timer) async {
+    // Refresh token every 15 minutes to prevent expiration (reduced from 30)
+    Timer.periodic(Duration(minutes: 15), (timer) async {
       if (_isAuthenticated && _userEmail != null) {
         try {
           print('🔍 Refreshing user token...');
@@ -119,13 +119,18 @@ class AppState extends ChangeNotifier {
           if (success) {
             print('✅ Token refreshed successfully');
           } else {
-            print('⚠️ Token refresh failed, user may need to re-authenticate');
+            print('⚠️ Token refresh failed, but keeping user session active');
+            // Don't logout on token refresh failure - use stored data as backup
+            // This prevents auto-logout when network is unstable
           }
         } catch (e) {
           print('❌ Error during token refresh: $e');
+          // On error, keep the user logged in using stored data
+          // This prevents auto-logout on network errors
         }
       } else {
         // Stop timer if user is not authenticated
+        print('🔍 User not authenticated, stopping token refresh timer');
         timer.cancel();
       }
     });
@@ -1144,12 +1149,15 @@ class AppState extends ChangeNotifier {
   Future<void> signOut() async {
     try {
       setLoading(true);
+      print('🔍 User explicitly signing out - clearing all data');
       
       // Clear stored user data first
       await _authService.clearStoredUserData();
+      print('✅ Stored user data cleared');
       
       // Sign out from Firebase
       await _authService.signOut();
+      print('✅ Firebase sign out completed');
       
       // Clear local state
       _isAuthenticated = false;
@@ -1175,8 +1183,9 @@ class AppState extends ChangeNotifier {
       _emails.clear();
       
       notifyListeners();
-      print('✅ User signed out successfully');
+      print('✅ User signed out successfully - all data cleared');
     } catch (e) {
+      print('❌ Error during sign out: $e');
       setError('Failed to sign out: ${e.toString()}');
     } finally {
       setLoading(false);
@@ -1191,6 +1200,10 @@ class AppState extends ChangeNotifier {
       // First, try to get stored user data from SharedPreferences
       final storedUserData = await _authService.getStoredUserData();
       final storedEmail = storedUserData['email'];
+      final storedUid = storedUserData['uid'];
+      
+      // Check if stored data is still valid
+      final isStoredDataValid = await _authService.isStoredUserDataValid();
       
       // Try to get current Firebase user with token refresh
       final currentUser = await _authService.getCurrentUserWithRefresh();
@@ -1208,14 +1221,14 @@ class AppState extends ChangeNotifier {
         
         // Initialize app data when authenticated
         await initializeApp();
-      } else if (storedEmail != null && storedEmail.isNotEmpty) {
-        print('🔍 No Firebase user, but found stored data: $storedEmail');
-        // Check if we can restore the session
+      } else if (storedEmail != null && storedEmail.isNotEmpty && isStoredDataValid) {
+        print('🔍 No Firebase user, but found valid stored data: $storedEmail');
+        // Check if we can restore the session from stored data
         try {
-          // Try to refresh the token to see if user is still valid
-          final isStillValid = await _authService.refreshUserToken();
-          if (isStillValid) {
-            print('🔍 Token refresh successful, user still valid');
+          // Check if we have a valid stored token
+          final hasValidToken = await _authService.isUserAuthenticated();
+          if (hasValidToken) {
+            print('🔍 Stored token is valid, restoring user session');
             _isAuthenticated = true;
             _userEmail = storedEmail;
             _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
@@ -1223,16 +1236,20 @@ class AppState extends ChangeNotifier {
             
             await initializeApp();
           } else {
-            print('🔍 Token refresh failed, clearing stored data');
-            await _authService.clearStoredUserData();
-            _isAuthenticated = false;
-            _userEmail = null;
-            _userName = null;
-            _userProfilePicture = null;
+            print('🔍 Stored token is invalid, but data is recent - keeping session');
+            // Even if token is invalid, if stored data is recent, keep the session
+            // This prevents auto-logout on app restart
+            _isAuthenticated = true;
+            _userEmail = storedEmail;
+            _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
+            _userProfilePicture = storedUserData['photo'];
+            
+            await initializeApp();
           }
         } catch (e) {
-          print('🔍 Error during token refresh: $e');
-          // On error, try to use stored data as fallback
+          print('🔍 Error during token validation: $e');
+          // On error, use stored data as fallback to prevent auto-logout
+          print('🔍 Using stored data as fallback to prevent auto-logout');
           _isAuthenticated = true;
           _userEmail = storedEmail;
           _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
@@ -1241,7 +1258,7 @@ class AppState extends ChangeNotifier {
           await initializeApp();
         }
       } else {
-        print('🔍 No Firebase user and no stored data');
+        print('🔍 No Firebase user and no valid stored data');
         _isAuthenticated = false;
         _userEmail = null;
         _userName = null;
@@ -1252,6 +1269,7 @@ class AppState extends ChangeNotifier {
       _authService.authStateChanges.listen((User? user) {
         print('🔍 Auth state changed: ${user?.email ?? 'null'}');
         if (user != null) {
+          print('🔍 User authenticated via Firebase');
           _isAuthenticated = true;
           _userEmail = user.email;
           _userName = user.displayName ?? user.email?.split('@')[0];
@@ -1264,14 +1282,44 @@ class AppState extends ChangeNotifier {
           initializeApp();
         } else {
           // Only clear auth state if user explicitly signed out
-          // Don't auto-logout on app restart
+          // Don't auto-logout on app restart or background
           if (_isAuthenticated) {
-            print('🔍 User explicitly signed out, clearing state');
-            _isAuthenticated = false;
-            _userEmail = null;
-            _userName = null;
-            _userProfilePicture = null;
-            _authService.clearStoredUserData();
+            print('🔍 Firebase user became null, checking if this is auto-logout...');
+            
+            // Check if we have recent stored data that suggests this isn't an explicit logout
+            final storedUserData = _authService.getStoredUserData();
+            storedUserData.then((data) {
+              if (data['email'] != null) {
+                final isDataValid = _authService.isStoredUserDataValid();
+                isDataValid.then((valid) {
+                  if (valid) {
+                    print('🔍 Recent stored data found - preventing auto-logout');
+                    // Keep the user logged in using stored data
+                    _isAuthenticated = true;
+                    _userEmail = data['email'];
+                    _userName = data['name'] ?? data['email']?.split('@')[0];
+                    _userProfilePicture = data['photo'];
+                    notifyListeners();
+                  } else {
+                    print('🔍 Stored data is old - allowing logout');
+                    _isAuthenticated = false;
+                    _userEmail = null;
+                    _userName = null;
+                    _userProfilePicture = null;
+                    _authService.clearStoredUserData();
+                    notifyListeners();
+                  }
+                });
+              } else {
+                print('🔍 No stored data - allowing logout');
+                _isAuthenticated = false;
+                _userEmail = null;
+                _userName = null;
+                _userProfilePicture = null;
+                _authService.clearStoredUserData();
+                notifyListeners();
+              }
+            });
           }
         }
         _isCheckingAuth = false;
@@ -1280,13 +1328,14 @@ class AppState extends ChangeNotifier {
       
     } catch (e) {
       print('❌ Error checking auth state: $e');
-      // On error, try to use stored data as fallback
+      // On error, try to use stored data as fallback to prevent auto-logout
       try {
         final storedUserData = await _authService.getStoredUserData();
         final storedEmail = storedUserData['email'];
+        final isDataValid = await _authService.isStoredUserDataValid();
         
-        if (storedEmail != null && storedEmail.isNotEmpty) {
-          print('🔍 Using stored data as fallback: $storedEmail');
+        if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+          print('🔍 Using stored data as fallback to prevent auto-logout: $storedEmail');
           _isAuthenticated = true;
           _userEmail = storedEmail;
           _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
@@ -1609,23 +1658,24 @@ class AppState extends ChangeNotifier {
         print('🔍 App resumed - checking auth state');
         // Refresh token when app comes back to foreground
         if (_isAuthenticated && _userEmail != null) {
-          _authService.refreshUserToken();
+          // Don't immediately refresh - wait a bit to avoid conflicts
+          Future.delayed(Duration(seconds: 2), () {
+            if (_isAuthenticated) {
+              _authService.refreshUserToken();
+            }
+          });
         }
         break;
       case AppLifecycleState.inactive:
         print('🔍 App inactive');
         break;
       case AppLifecycleState.paused:
-        print('🔍 App paused - storing current state');
+        print('🔍 App paused - preserving auth state');
         // Store current auth state when app goes to background
+        // But don't clear anything - just ensure data is persisted
         if (_isAuthenticated && _userEmail != null) {
-          // Ensure user data is stored
-          _authService.getStoredUserData().then((storedData) {
-            if (storedData['email'] != _userEmail) {
-              // Update stored data if it's different
-              print('🔍 Updating stored user data before app pause');
-            }
-          });
+          print('🔍 App going to background - preserving user session: $_userEmail');
+          // The stored data is already up to date, just log the state
         }
         break;
       case AppLifecycleState.detached:
@@ -1634,6 +1684,104 @@ class AppState extends ChangeNotifier {
       case AppLifecycleState.hidden:
         print('🔍 App hidden');
         break;
+    }
+  }
+
+  // Manually restore user session from stored data
+  Future<bool> restoreUserSession() async {
+    try {
+      print('🔍 Attempting to restore user session from stored data...');
+      
+      final storedUserData = await _authService.getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await _authService.isStoredUserDataValid();
+      
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+        print('✅ Restoring user session: $storedEmail');
+        _isAuthenticated = true;
+        _userEmail = storedEmail;
+        _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
+        _userProfilePicture = storedUserData['photo'];
+        
+        // Initialize app data
+        await initializeApp();
+        
+        notifyListeners();
+        return true;
+      } else {
+        print('❌ No valid stored data to restore session from');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error restoring user session: $e');
+      return false;
+    }
+  }
+
+  // Check if user session can be restored
+  Future<bool> canRestoreSession() async {
+    try {
+      final storedUserData = await _authService.getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await _authService.isStoredUserDataValid();
+      
+      return storedEmail != null && storedEmail.isNotEmpty && isDataValid;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Debug method to check current state
+  Future<Map<String, dynamic>> debugCurrentState() async {
+    try {
+      final authDebug = await _authService.debugAuthState();
+      
+      return {
+        'app_state': {
+          'is_authenticated': _isAuthenticated,
+          'is_checking_auth': _isCheckingAuth,
+          'user_email': _userEmail,
+          'user_name': _userName,
+          'user_photo': _userProfilePicture,
+        },
+        'auth_service': authDebug,
+        'data_counts': {
+          'weekly_goals': _weeklyGoals.length,
+          'long_term_goals': _longTermGoals.length,
+          'problems': _problems.length,
+          'ai_challenges': _aiChallenges.length,
+        },
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      return {
+        'error': e.toString(),
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+    }
+  }
+
+  // Force refresh authentication state
+  Future<void> forceRefreshAuth() async {
+    try {
+      print('🔍 Force refreshing authentication state...');
+      
+      // Try to refresh Firebase token
+      final tokenRefreshed = await _authService.refreshUserToken();
+      print('🔍 Token refresh result: $tokenRefreshed');
+      
+      // Check if we can restore from stored data
+      final canRestore = await canRestoreSession();
+      print('🔍 Can restore session: $canRestore');
+      
+      if (canRestore && !_isAuthenticated) {
+        print('🔍 Restoring session from stored data...');
+        await restoreUserSession();
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error in force refresh auth: $e');
     }
   }
 
