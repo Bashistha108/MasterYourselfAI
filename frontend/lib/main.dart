@@ -67,10 +67,25 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     
+    print('🔍 MainApp: App lifecycle changed to: $state');
+    
     // Notify AppState about lifecycle changes
     final appState = context.read<AppState>();
     if (appState != null) {
+      print('🔍 MainApp: Notifying AppState of lifecycle change');
       appState.onAppLifecycleChanged(state);
+      
+      // If app is resumed, try to restore session
+      if (state == AppLifecycleState.resumed) {
+        print('🔍 MainApp: App resumed, checking session restoration...');
+        Future.delayed(Duration(milliseconds: 1000), () {
+          if (mounted) {
+            appState.forceCheckAndRestoreSession();
+          }
+        });
+      }
+    } else {
+      print('⚠️ MainApp: AppState not available for lifecycle change');
     }
   }
 

@@ -26,6 +26,8 @@ class FirebaseAuthService {
             print('✅ Token refreshed and stored for: ${user.email}');
             // Store the token in SharedPreferences for backup
             _storeAuthToken(token);
+            // Store user data immediately
+            storeUserData(user);
           }
         }).catchError((e) {
           print('⚠️ Token refresh failed: $e');
@@ -96,24 +98,31 @@ class FirebaseAuthService {
   Future<bool> isUserAuthenticated() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) {
-        // Check if we have a stored token as backup
-        final storedToken = await getStoredAuthToken();
-        if (storedToken != null) {
-          print('🔍 No current Firebase user, but found stored token');
-          return true;
-        }
-        return false;
+      if (user != null) {
+        // Check if token is valid and refresh if needed
+        final token = await user.getIdToken(true);
+        return token.isNotEmpty;
       }
       
-      // Check if token is valid and refresh if needed
-      final token = await user.getIdToken(true);
-      return token.isNotEmpty;
+      // If no Firebase user, check stored data
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+        print('🔍 No Firebase user, but found valid stored data: $storedEmail');
+        return true;
+      }
+      
+      return false;
     } catch (e) {
       print('❌ Error checking user authentication: $e');
-      // On error, check stored token as fallback
-      final storedToken = await getStoredAuthToken();
-      return storedToken != null;
+      // On error, check stored data as fallback
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      return storedEmail != null && storedEmail.isNotEmpty && isDataValid;
     }
   }
 
@@ -121,30 +130,37 @@ class FirebaseAuthService {
   Future<bool> refreshUserToken() async {
     try {
       final user = _auth.currentUser;
-      if (user == null) {
-        // Try to restore from stored token
-        final storedToken = await getStoredAuthToken();
-        if (storedToken != null) {
-          print('✅ Restored authentication from stored token');
+      if (user != null) {
+        // Force refresh the token
+        final token = await user.getIdToken(true);
+        if (token.isNotEmpty) {
+          print('✅ User token refreshed successfully');
+          // Store the refreshed token
+          await _storeAuthToken(token);
           return true;
         }
         return false;
       }
       
-      // Force refresh the token
-      final token = await user.getIdToken(true);
-      if (token.isNotEmpty) {
-        print('✅ User token refreshed successfully');
-        // Store the refreshed token
-        await _storeAuthToken(token);
+      // If no Firebase user, check if we can restore from stored data
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
+        print('✅ Can restore authentication from stored data: $storedEmail');
         return true;
       }
+      
       return false;
     } catch (e) {
       print('❌ Error refreshing user token: $e');
-      // On error, check stored token as fallback
-      final storedToken = await getStoredAuthToken();
-      return storedToken != null;
+      // On error, check stored data as fallback
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      return storedEmail != null && storedEmail.isNotEmpty && isDataValid;
     }
   }
 
@@ -159,11 +175,13 @@ class FirebaseAuthService {
       }
       
       // If no current user, check if we can restore from stored data
-      final storedToken = await getStoredAuthToken();
-      if (storedToken != null) {
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
         print('🔍 Attempting to restore user session from stored token');
         // Try to get user info from stored data
-        final storedUserData = await getStoredUserData();
         if (storedUserData['email'] != null) {
           print('✅ Restored user session: ${storedUserData['email']}');
           // Return a mock user object with stored data
@@ -212,6 +230,29 @@ class FirebaseAuthService {
     }
   }
 
+  // Store user data manually (for non-Firebase users)
+  Future<void> storeUserDataManually({
+    required String email,
+    required String name,
+    String? photo,
+    String? uid,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email', email);
+      await prefs.setString('user_name', name);
+      if (photo != null) await prefs.setString('user_photo', photo);
+      if (uid != null) await prefs.setString('user_uid', uid);
+      
+      // Also store the current timestamp
+      await prefs.setString('user_data_timestamp', DateTime.now().toIso8601String());
+      
+      print('✅ User data stored manually in SharedPreferences: $email');
+    } catch (e) {
+      print('❌ Error storing user data manually: $e');
+    }
+  }
+
   // Clear stored user data
   Future<void> clearStoredUserData() async {
     try {
@@ -240,18 +281,32 @@ class FirebaseAuthService {
         final now = DateTime.now();
         final difference = now.difference(dataTime);
         
-        // Consider data valid if less than 24 hours old
-        if (difference.inHours < 24) {
-          print('✅ Stored user data is still valid (${difference.inHours} hours old)');
+        // Consider data valid if less than 7 days old (increased from 24 hours)
+        if (difference.inDays < 7) {
+          print('✅ Stored user data is still valid (${difference.inDays} days old)');
           return true;
         } else {
-          print('⚠️ Stored user data is too old (${difference.inHours} hours old)');
+          print('⚠️ Stored user data is too old (${difference.inDays} days old)');
           return false;
         }
       }
       return false;
     } catch (e) {
       print('❌ Error checking stored user data validity: $e');
+      return false;
+    }
+  }
+
+  // Check if user has a valid stored session
+  Future<bool> hasValidStoredSession() async {
+    try {
+      final storedUserData = await getStoredUserData();
+      final storedEmail = storedUserData['email'];
+      final isDataValid = await isStoredUserDataValid();
+      
+      return storedEmail != null && storedEmail.isNotEmpty && isDataValid;
+    } catch (e) {
+      print('❌ Error checking stored session: $e');
       return false;
     }
   }

@@ -108,6 +108,46 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Force check and restore session
+  Future<void> forceCheckAndRestoreSession() async {
+    try {
+      print('🔍 Force checking and restoring session...');
+      
+      // Check if we have a valid stored session
+      final hasValidSession = await _authService.hasValidStoredSession();
+      
+      if (hasValidSession) {
+        print('🔍 Valid stored session found, restoring...');
+        await restoreUserSession();
+      } else {
+        print('🔍 No valid stored session found');
+        // Try to check Firebase auth state
+        final isFirebaseAuth = await _authService.isUserAuthenticated();
+        if (isFirebaseAuth) {
+          print('🔍 Firebase auth is valid');
+          // Get current Firebase user and store data
+          final currentUser = _authService.currentUser;
+          if (currentUser != null) {
+            await _authService.storeUserData(currentUser);
+            _isAuthenticated = true;
+            _userEmail = currentUser.email;
+            _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
+            _userProfilePicture = currentUser.photoURL;
+            
+            await initializeApp();
+            notifyListeners();
+          }
+        } else {
+          print('🔍 No valid authentication found');
+          _isAuthenticated = false;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      print('❌ Error in force check and restore: $e');
+    }
+  }
+  
   // Start token refresh timer
   void _startTokenRefreshTimer() {
     // Refresh token every 15 minutes to prevent expiration (reduced from 30)
@@ -1042,6 +1082,14 @@ class AppState extends ChangeNotifier {
         _userName = response['user']?['display_name'] ?? email.split('@')[0];
         _userProfilePicture = null; // Flask backend doesn't have profile pictures
         
+        // Store user data in SharedPreferences for persistence
+        await _authService.storeUserDataManually(
+          email: email,
+          name: _userName!,
+          photo: null,
+          uid: response['user']?['id']?.toString(),
+        );
+        
         notifyListeners();
         return true;
       } else {
@@ -1083,6 +1131,14 @@ class AppState extends ChangeNotifier {
             _userEmail = result.user!.email;
             _userName = response['user']?['display_name'] ?? result.user!.displayName ?? result.user!.email?.split('@')[0];
             _userProfilePicture = result.user!.photoURL;
+            
+            // Store user data in SharedPreferences for persistence
+            await _authService.storeUserDataManually(
+              email: _userEmail!,
+              name: _userName!,
+              photo: _userProfilePicture,
+              uid: result.user!.uid,
+            );
             
             print("✅ Google login successful for: $_userEmail");
             notifyListeners();
@@ -1130,6 +1186,14 @@ class AppState extends ChangeNotifier {
         _isCheckingAuth = false;
         _userEmail = email;
         _userName = name;
+        
+        // Store user data in SharedPreferences for persistence
+        await _authService.storeUserDataManually(
+          email: email,
+          name: name,
+          photo: null,
+          uid: response['user']?['id']?.toString(),
+        );
         
         notifyListeners();
         return true;
@@ -1197,20 +1261,38 @@ class AppState extends ChangeNotifier {
     try {
       print('🔍 Starting auth state check...');
       
-      // First, try to get stored user data from SharedPreferences
+      // First, check if we have valid stored user data
+      final hasValidStoredSession = await _authService.hasValidStoredSession();
       final storedUserData = await _authService.getStoredUserData();
       final storedEmail = storedUserData['email'];
-      final storedUid = storedUserData['uid'];
       
-      // Check if stored data is still valid
-      final isStoredDataValid = await _authService.isStoredUserDataValid();
+      print('🔍 Has valid stored session: $hasValidStoredSession');
+      print('🔍 Stored email: $storedEmail');
       
-      // Try to get current Firebase user with token refresh
+      if (hasValidStoredSession && storedEmail != null) {
+        print('🔍 Found valid stored session, restoring user: $storedEmail');
+        
+        // Restore user session from stored data
+        _isAuthenticated = true;
+        _userEmail = storedEmail;
+        _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
+        _userProfilePicture = storedUserData['photo'];
+        
+        // Initialize app data
+        await initializeApp();
+        
+        print('✅ User session restored from stored data');
+        _isCheckingAuth = false;
+        notifyListeners();
+        return;
+      }
+      
+      // If no valid stored session, try Firebase
+      print('🔍 No valid stored session, checking Firebase...');
       final currentUser = await _authService.getCurrentUserWithRefresh();
-      print('🔍 Current Firebase user: ${currentUser?.email ?? 'null'}');
       
       if (currentUser != null) {
-        print('🔍 Firebase user is valid, using Firebase data');
+        print('🔍 Firebase user is valid: ${currentUser.email}');
         _isAuthenticated = true;
         _userEmail = currentUser.email;
         _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
@@ -1221,44 +1303,10 @@ class AppState extends ChangeNotifier {
         
         // Initialize app data when authenticated
         await initializeApp();
-      } else if (storedEmail != null && storedEmail.isNotEmpty && isStoredDataValid) {
-        print('🔍 No Firebase user, but found valid stored data: $storedEmail');
-        // Check if we can restore the session from stored data
-        try {
-          // Check if we have a valid stored token
-          final hasValidToken = await _authService.isUserAuthenticated();
-          if (hasValidToken) {
-            print('🔍 Stored token is valid, restoring user session');
-            _isAuthenticated = true;
-            _userEmail = storedEmail;
-            _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
-            _userProfilePicture = storedUserData['photo'];
-            
-            await initializeApp();
-          } else {
-            print('🔍 Stored token is invalid, but data is recent - keeping session');
-            // Even if token is invalid, if stored data is recent, keep the session
-            // This prevents auto-logout on app restart
-            _isAuthenticated = true;
-            _userEmail = storedEmail;
-            _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
-            _userProfilePicture = storedUserData['photo'];
-            
-            await initializeApp();
-          }
-        } catch (e) {
-          print('🔍 Error during token validation: $e');
-          // On error, use stored data as fallback to prevent auto-logout
-          print('🔍 Using stored data as fallback to prevent auto-logout');
-          _isAuthenticated = true;
-          _userEmail = storedEmail;
-          _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
-          _userProfilePicture = storedUserData['photo'];
-          
-          await initializeApp();
-        }
+        
+        print('✅ User authenticated via Firebase');
       } else {
-        print('🔍 No Firebase user and no valid stored data');
+        print('🔍 No Firebase user found');
         _isAuthenticated = false;
         _userEmail = null;
         _userName = null;
@@ -1268,6 +1316,7 @@ class AppState extends ChangeNotifier {
       // Set up auth state listener for real-time changes
       _authService.authStateChanges.listen((User? user) {
         print('🔍 Auth state changed: ${user?.email ?? 'null'}');
+        
         if (user != null) {
           print('🔍 User authenticated via Firebase');
           _isAuthenticated = true;
@@ -1281,37 +1330,18 @@ class AppState extends ChangeNotifier {
           // Initialize app data when authenticated
           initializeApp();
         } else {
-          // Only clear auth state if user explicitly signed out
-          // Don't auto-logout on app restart or background
+          // Only clear auth state if we don't have valid stored data
           if (_isAuthenticated) {
-            print('🔍 Firebase user became null, checking if this is auto-logout...');
+            print('🔍 Firebase user became null, checking stored data...');
             
-            // Check if we have recent stored data that suggests this isn't an explicit logout
-            final storedUserData = _authService.getStoredUserData();
-            storedUserData.then((data) {
-              if (data['email'] != null) {
-                final isDataValid = _authService.isStoredUserDataValid();
-                isDataValid.then((valid) {
-                  if (valid) {
-                    print('🔍 Recent stored data found - preventing auto-logout');
-                    // Keep the user logged in using stored data
-                    _isAuthenticated = true;
-                    _userEmail = data['email'];
-                    _userName = data['name'] ?? data['email']?.split('@')[0];
-                    _userProfilePicture = data['photo'];
-                    notifyListeners();
-                  } else {
-                    print('🔍 Stored data is old - allowing logout');
-                    _isAuthenticated = false;
-                    _userEmail = null;
-                    _userName = null;
-                    _userProfilePicture = null;
-                    _authService.clearStoredUserData();
-                    notifyListeners();
-                  }
-                });
+            final hasValidStored = _authService.hasValidStoredSession();
+            hasValidStored.then((valid) {
+              if (valid) {
+                print('🔍 Valid stored data found - preventing auto-logout');
+                // Keep the user logged in using stored data
+                // Don't change the current state
               } else {
-                print('🔍 No stored data - allowing logout');
+                print('🔍 No valid stored data - allowing logout');
                 _isAuthenticated = false;
                 _userEmail = null;
                 _userName = null;
@@ -1322,20 +1352,22 @@ class AppState extends ChangeNotifier {
             });
           }
         }
+        
         _isCheckingAuth = false;
         notifyListeners();
       });
       
     } catch (e) {
       print('❌ Error checking auth state: $e');
-      // On error, try to use stored data as fallback to prevent auto-logout
+      
+      // On error, try to use stored data as fallback
       try {
-        final storedUserData = await _authService.getStoredUserData();
-        final storedEmail = storedUserData['email'];
-        final isDataValid = await _authService.isStoredUserDataValid();
-        
-        if (storedEmail != null && storedEmail.isNotEmpty && isDataValid) {
-          print('🔍 Using stored data as fallback to prevent auto-logout: $storedEmail');
+        final hasValidStored = await _authService.hasValidStoredSession();
+        if (hasValidStored) {
+          final storedUserData = await _authService.getStoredUserData();
+          final storedEmail = storedUserData['email'];
+          
+          print('🔍 Using stored data as fallback: $storedEmail');
           _isAuthenticated = true;
           _userEmail = storedEmail;
           _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
@@ -1350,7 +1382,7 @@ class AppState extends ChangeNotifier {
         _isAuthenticated = false;
       }
     } finally {
-      _isCheckingAuth = false; // Done checking auth
+      _isCheckingAuth = false;
       print('🔍 Auth state check completed. Authenticated: $_isAuthenticated');
       notifyListeners();
     }
@@ -1782,6 +1814,67 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('❌ Error in force refresh auth: $e');
+    }
+  }
+
+  // Test session persistence
+  Future<void> testSessionPersistence() async {
+    try {
+      print('🧪 Testing session persistence...');
+      
+      // Check current state
+      print('🧪 Current app state:');
+      print('  - isAuthenticated: $_isAuthenticated');
+      print('  - userEmail: $_userEmail');
+      print('  - userName: $_userName');
+      
+      // Check stored data
+      final storedUserData = await _authService.getStoredUserData();
+      print('🧪 Stored user data:');
+      print('  - email: ${storedUserData['email']}');
+      print('  - name: ${storedUserData['name']}');
+      print('  - uid: ${storedUserData['uid']}');
+      
+      // Check if stored data is valid
+      final isStoredValid = await _authService.isStoredUserDataValid();
+      print('🧪 Stored data valid: $isStoredValid');
+      
+      // Check if we have a valid stored session
+      final hasValidSession = await _authService.hasValidStoredSession();
+      print('🧪 Has valid stored session: $hasValidSession');
+      
+      // Check Firebase auth state
+      final isFirebaseAuth = await _authService.isUserAuthenticated();
+      print('🧪 Firebase auth valid: $isFirebaseAuth');
+      
+      print('🧪 Session persistence test completed');
+    } catch (e) {
+      print('❌ Error in session persistence test: $e');
+    }
+  }
+
+  // Simulate app restart (for testing)
+  Future<void> simulateAppRestart() async {
+    try {
+      print('🔄 Simulating app restart...');
+      
+      // Clear current state but keep stored data
+      _isAuthenticated = false;
+      _userEmail = null;
+      _userName = null;
+      _userProfilePicture = null;
+      
+      notifyListeners();
+      
+      // Wait a bit
+      await Future.delayed(Duration(milliseconds: 500));
+      
+      // Try to restore session
+      await forceCheckAndRestoreSession();
+      
+      print('🔄 App restart simulation completed');
+    } catch (e) {
+      print('❌ Error in app restart simulation: $e');
     }
   }
 

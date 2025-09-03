@@ -16,7 +16,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // Initialize auth state when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        print('🔍 AuthWrapper: Starting auth state check...');
         context.read<AppState>().checkAuthState();
+        
+        // Also try to force restore session after a delay
+        Future.delayed(Duration(milliseconds: 500), () {
+          if (mounted) {
+            print('🔍 AuthWrapper: Force checking session restoration...');
+            context.read<AppState>().forceCheckAndRestoreSession();
+          }
+        });
       }
     });
   }
