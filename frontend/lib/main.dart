@@ -28,18 +28,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase with persistence
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Configure Firebase Auth persistence
-  try {
-    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
-    print('✅ Firebase Auth persistence set to LOCAL');
-  } catch (e) {
-    print('⚠️ Could not set Firebase Auth persistence: $e');
-  }
+  // Note: Firebase Auth persistence is handled automatically on mobile
+  // No need to manually set persistence
+  print('✅ Firebase initialized');
   
   runApp(MyApp());
 }
@@ -49,20 +45,33 @@ class MyApp extends StatefulWidget {
   _MyAppState createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   StreamSubscription? _linkSubscription;
   final _appLinks = AppLinks();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initDeepLinkHandling();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _linkSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Notify AppState about lifecycle changes
+    final appState = context.read<AppState>();
+    if (appState != null) {
+      appState.onAppLifecycleChanged(state);
+    }
   }
 
   void _initDeepLinkHandling() {

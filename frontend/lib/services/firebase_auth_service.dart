@@ -13,8 +13,8 @@ class FirebaseAuthService {
   }
 
   void _initializeAuth() {
-    // Set persistence to LOCAL (persists across app restarts)
-    _auth.setPersistence(Persistence.LOCAL);
+    // Note: setPersistence is deprecated on mobile, Firebase handles this automatically
+    // The persistence is controlled by the platform and Firebase configuration
     
     // Enable token auto-refresh
     _auth.authStateChanges().listen((User? user) {
@@ -46,6 +46,38 @@ class FirebaseAuthService {
     } catch (e) {
       print('❌ Error checking user authentication: $e');
       return false;
+    }
+  }
+
+  // Force refresh user token and check authentication
+  Future<bool> refreshUserToken() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+      
+      // Force refresh the token
+      await user.getIdToken(true);
+      print('✅ User token refreshed successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error refreshing user token: $e');
+      return false;
+    }
+  }
+
+  // Get user with token refresh
+  Future<User?> getCurrentUserWithRefresh() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Refresh token to ensure it's valid
+        await user.getIdToken(true);
+        return user;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error getting current user with refresh: $e');
+      return null;
     }
   }
 

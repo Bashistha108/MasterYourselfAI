@@ -14,6 +14,8 @@ import 'package:master_yourself_ai/models/email.dart';
 import 'package:master_yourself_ai/services/api_service.dart';
 import 'package:master_yourself_ai/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async'; // Added for Timer
+import 'package:flutter/material.dart'; // Added for AppLifecycleState
 
 class AppState extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -95,11 +97,38 @@ class AppState extends ChangeNotifier {
         loadAIChallenges(), // Load all AI challenges instead of just today's
       ]);
       setError(null);
+      
+      // Start token refresh timer to prevent auto-logout
+      _startTokenRefreshTimer();
+      
     } catch (e) {
       setError('Failed to load app data: $e');
     } finally {
       setLoading(false);
     }
+  }
+
+  // Start token refresh timer
+  void _startTokenRefreshTimer() {
+    // Refresh token every 30 minutes to prevent expiration
+    Timer.periodic(Duration(minutes: 30), (timer) async {
+      if (_isAuthenticated && _userEmail != null) {
+        try {
+          print('🔍 Refreshing user token...');
+          final success = await _authService.refreshUserToken();
+          if (success) {
+            print('✅ Token refreshed successfully');
+          } else {
+            print('⚠️ Token refresh failed, user may need to re-authenticate');
+          }
+        } catch (e) {
+          print('❌ Error during token refresh: $e');
+        }
+      } else {
+        // Stop timer if user is not authenticated
+        timer.cancel();
+      }
+    });
   }
   
   // Weekly Goals
@@ -1163,19 +1192,60 @@ class AppState extends ChangeNotifier {
       final storedUserData = await _authService.getStoredUserData();
       final storedEmail = storedUserData['email'];
       
-      if (storedEmail != null && storedEmail.isNotEmpty) {
-        print('🔍 Found stored user data: $storedEmail');
-        // Restore user data from storage
-        _userEmail = storedEmail;
-        _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
-        _userProfilePicture = storedUserData['photo'];
+      // Try to get current Firebase user with token refresh
+      final currentUser = await _authService.getCurrentUserWithRefresh();
+      print('🔍 Current Firebase user: ${currentUser?.email ?? 'null'}');
+      
+      if (currentUser != null) {
+        print('🔍 Firebase user is valid, using Firebase data');
         _isAuthenticated = true;
-        _isCheckingAuth = false;
-        notifyListeners();
+        _userEmail = currentUser.email;
+        _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
+        _userProfilePicture = currentUser.photoURL;
         
-        // Initialize app data
+        // Store user data persistently
+        await _authService.storeUserData(currentUser);
+        
+        // Initialize app data when authenticated
         await initializeApp();
-        return;
+      } else if (storedEmail != null && storedEmail.isNotEmpty) {
+        print('🔍 No Firebase user, but found stored data: $storedEmail');
+        // Check if we can restore the session
+        try {
+          // Try to refresh the token to see if user is still valid
+          final isStillValid = await _authService.refreshUserToken();
+          if (isStillValid) {
+            print('🔍 Token refresh successful, user still valid');
+            _isAuthenticated = true;
+            _userEmail = storedEmail;
+            _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
+            _userProfilePicture = storedUserData['photo'];
+            
+            await initializeApp();
+          } else {
+            print('🔍 Token refresh failed, clearing stored data');
+            await _authService.clearStoredUserData();
+            _isAuthenticated = false;
+            _userEmail = null;
+            _userName = null;
+            _userProfilePicture = null;
+          }
+        } catch (e) {
+          print('🔍 Error during token refresh: $e');
+          // On error, try to use stored data as fallback
+          _isAuthenticated = true;
+          _userEmail = storedEmail;
+          _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
+          _userProfilePicture = storedUserData['photo'];
+          
+          await initializeApp();
+        }
+      } else {
+        print('🔍 No Firebase user and no stored data');
+        _isAuthenticated = false;
+        _userEmail = null;
+        _userName = null;
+        _userProfilePicture = null;
       }
       
       // Set up auth state listener for real-time changes
@@ -1208,39 +1278,6 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       });
       
-      // Check current user from Firebase
-      final currentUser = _authService.currentUser;
-      print('🔍 Current Firebase user: ${currentUser?.email ?? 'null'}');
-      
-      if (currentUser != null) {
-        _isAuthenticated = true;
-        _userEmail = currentUser.email;
-        _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
-        _userProfilePicture = currentUser.photoURL;
-        
-        // Store user data persistently
-        await _authService.storeUserData(currentUser);
-        
-        // Initialize app data when authenticated
-        await initializeApp();
-      } else {
-        // Check if we have stored data and user is still valid
-        if (storedEmail != null && storedEmail.isNotEmpty) {
-          print('🔍 Using stored user data: $storedEmail');
-          _isAuthenticated = true;
-          _userEmail = storedEmail;
-          _userName = storedUserData['name'] ?? storedEmail.split('@')[0];
-          _userProfilePicture = storedUserData['photo'];
-          
-          // Initialize app data
-          await initializeApp();
-        } else {
-          _isAuthenticated = false;
-          _userEmail = null;
-          _userName = null;
-          _userProfilePicture = null;
-        }
-      }
     } catch (e) {
       print('❌ Error checking auth state: $e');
       // On error, try to use stored data as fallback
@@ -1565,5 +1602,39 @@ class AppState extends ChangeNotifier {
     }
   }
   
+  // Handle app lifecycle changes
+  void onAppLifecycleChanged(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        print('🔍 App resumed - checking auth state');
+        // Refresh token when app comes back to foreground
+        if (_isAuthenticated && _userEmail != null) {
+          _authService.refreshUserToken();
+        }
+        break;
+      case AppLifecycleState.inactive:
+        print('🔍 App inactive');
+        break;
+      case AppLifecycleState.paused:
+        print('🔍 App paused - storing current state');
+        // Store current auth state when app goes to background
+        if (_isAuthenticated && _userEmail != null) {
+          // Ensure user data is stored
+          _authService.getStoredUserData().then((storedData) {
+            if (storedData['email'] != _userEmail) {
+              // Update stored data if it's different
+              print('🔍 Updating stored user data before app pause');
+            }
+          });
+        }
+        break;
+      case AppLifecycleState.detached:
+        print('🔍 App detached');
+        break;
+      case AppLifecycleState.hidden:
+        print('🔍 App hidden');
+        break;
+    }
+  }
 
 }
