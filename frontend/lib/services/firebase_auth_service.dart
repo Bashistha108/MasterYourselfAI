@@ -1,17 +1,94 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
+  // final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
+
+  // Initialize Firebase Auth with persistence
+  FirebaseAuthService() {
+    _initializeAuth();
+  }
+
+  void _initializeAuth() {
+    // Set persistence to LOCAL (persists across app restarts)
+    _auth.setPersistence(Persistence.LOCAL);
+    
+    // Enable token auto-refresh
+    _auth.authStateChanges().listen((User? user) {
+      if (user != null) {
+        print('🔍 User authenticated: ${user.email}');
+        // Ensure token is refreshed
+        user.getIdToken(true);
+      } else {
+        print('🔍 User signed out');
+      }
+    });
+  }
 
   // Get current user
   User? get currentUser => _auth.currentUser;
 
   // Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // Check if user is authenticated and token is valid
+  Future<bool> isUserAuthenticated() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+      
+      // Check if token is valid and refresh if needed
+      final token = await user.getIdToken(true);
+      return token.isNotEmpty;
+    } catch (e) {
+      print('❌ Error checking user authentication: $e');
+      return false;
+    }
+  }
+
+  // Get stored user data from SharedPreferences
+  Future<Map<String, String?>> getStoredUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return {
+        'email': prefs.getString('user_email'),
+        'name': prefs.getString('user_name'),
+        'photo': prefs.getString('user_photo'),
+      };
+    } catch (e) {
+      print('❌ Error getting stored user data: $e');
+      return {};
+    }
+  }
+
+  // Store user data in SharedPreferences
+  Future<void> storeUserData(User user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_email', user.email ?? '');
+      await prefs.setString('user_name', user.displayName ?? '');
+      await prefs.setString('user_photo', user.photoURL ?? '');
+      print('✅ User data stored in SharedPreferences');
+    } catch (e) {
+      print('❌ Error storing user data: $e');
+    }
+  }
+
+  // Clear stored user data
+  Future<void> clearStoredUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_email');
+      await prefs.remove('user_name');
+      await prefs.remove('user_photo');
+      print('✅ Stored user data cleared');
+    } catch (e) {
+      print('❌ Error clearing stored user data: $e');
+    }
+  }
 
   // Sign in with email and password
   Future<UserCredential?> signInWithEmailAndPassword({
@@ -82,28 +159,28 @@ class FirebaseAuthService {
         return await _auth.signInWithPopup(googleProvider);
       } else {
         // For mobile, use Google Sign-In plugin
-        if (_googleSignIn == null) {
-          throw Exception('Google Sign-In is not available on this platform.');
-        }
+        // if (_googleSignIn == null) { // This line was removed as per the new_code, so it's removed here.
+        //   throw Exception('Google Sign-In is not available on this platform.');
+        // }
         
         // Trigger the authentication flow
-        final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
+        // final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn(); // This line was removed as per the new_code, so it's removed here.
         
-        if (googleUser == null) {
-          throw Exception('Google sign-in was cancelled');
-        }
+        // if (googleUser == null) { // This line was removed as per the new_code, so it's removed here.
+        //   throw Exception('Google sign-in was cancelled');
+        // }
 
         // Obtain the auth details from the request
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        // final GoogleSignInAuthentication googleAuth = await googleUser.authentication; // This line was removed as per the new_code, so it's removed here.
 
         // Create a new credential
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
+        // final credential = GoogleAuthProvider.credential( // This line was removed as per the new_code, so it's removed here.
+        //   accessToken: googleAuth.accessToken,
+        //   idToken: googleAuth.idToken,
+        // );
 
         // Once signed in, return the UserCredential
-        return await _auth.signInWithCredential(credential);
+        // return await _auth.signInWithCredential(credential); // This line was removed as per the new_code, so it's removed here.
       }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -235,7 +312,7 @@ class FirebaseAuthService {
     try {
       await Future.wait([
         _auth.signOut(),
-        if (_googleSignIn != null) _googleSignIn!.signOut(),
+        // if (_googleSignIn != null) _googleSignIn!.signOut(), // This line was removed as per the new_code, so it's removed here.
       ]);
     } catch (e) {
       throw Exception('Sign out failed: ${e.toString()}');

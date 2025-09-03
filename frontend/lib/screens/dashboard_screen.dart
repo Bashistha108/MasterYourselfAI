@@ -39,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close dialog
-                appState.logout();
+                appState.signOut();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -604,8 +604,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           icon: Icon(Icons.more_vert, color: Colors.white),
                           color: Colors.white,
                           onSelected: (value) {
-                            if (value == 'logout') {
-                              _showLogoutDialog(context, appState);
+                            switch (value) {
+                              case 'logout':
+                                _showLogoutDialog(context, appState);
+                                break;
                             }
                           },
                           itemBuilder: (context) => [

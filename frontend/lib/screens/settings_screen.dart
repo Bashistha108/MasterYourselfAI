@@ -502,7 +502,7 @@ class SettingsScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(16),
                               onTap: () async {
                                 final appState = Provider.of<AppState>(context, listen: false);
-                                await appState.logout();
+                                await appState.signOut();
                                 Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
                               },
                               child: Padding(

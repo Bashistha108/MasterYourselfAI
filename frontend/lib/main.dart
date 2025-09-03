@@ -23,12 +23,24 @@ import 'package:master_yourself_ai/screens/mailbox_screen.dart';
 import 'package:master_yourself_ai/screens/password_reset_screen.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase with persistence
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Configure Firebase Auth persistence
+  try {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    print('✅ Firebase Auth persistence set to LOCAL');
+  } catch (e) {
+    print('⚠️ Could not set Firebase Auth persistence: $e');
+  }
+  
   runApp(MyApp());
 }
 
