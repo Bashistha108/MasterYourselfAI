@@ -16,6 +16,10 @@
         {
           "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
           "client_type": 3
+        },
+        {
+          "client_id": "259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "api_key": [
@@ -27,7 +31,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
+              "client_id": "259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com",
               "client_type": 3
             },
             {

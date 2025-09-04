@@ -35,14 +35,14 @@ dependencies:
   # flutter_local_notifications: ^16.3.0
   
   # Authentication
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.8
-  google_sign_in: ^6.2.1
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.20.0
+  google_sign_in: ^6.3.0
   
   # Utilities
   uuid: ^4.2.1
   path_provider: ^2.1.1
-  app_links: ^3.4.5
+  app_links: ^3.5.1
   
   # Web View for HTML content
   webview_flutter: ^4.7.0

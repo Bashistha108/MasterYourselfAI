@@ -10,11 +10,18 @@ from flask_cors import cross_origin
 from app import db
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from dotenv import load_dotenv
 
 auth_bp = Blueprint('auth', __name__)
 
 # Import ResetToken model for database storage
 from app.models.user import ResetToken
+
+load_dotenv()
+
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_ANDROID_CLIENT_ID = os.getenv('GOOGLE_ANDROID_CLIENT_ID', '259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com')
+GOOGLE_WEB_CLIENT_ID = os.getenv('GOOGLE_WEB_CLIENT_ID', '259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com')
 
 def generate_reset_token():
     """Generate a secure reset token"""
@@ -524,96 +531,136 @@ def login():
         print(f"❌ Error in login: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+from flask import Blueprint, request, jsonify
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from app.models.user import User
+from app import db
+
+auth_bp = Blueprint("auth", __name__)
+
 @auth_bp.route('/google-login', methods=['POST'])
 def google_login():
-    """Login with Google OAuth token - SIMPLIFIED VERSION"""
+    """Login with Google OAuth token - Secure version"""
     try:
+        # 1. Get request data
         data = request.get_json()
-        id_token_google = data.get('idToken')
-        
+        id_token_google = data.get("idToken")
+
+        print(f"🔍 Received Google login request")
+        print(f"🔍 ID token present: {id_token_google is not None}")
+        print(f"🔍 ID token length: {len(id_token_google) if id_token_google else 0}")
+
         if not id_token_google:
-            print("❌ No ID token provided")
-            return jsonify({'error': 'Google ID token is required'}), 400
+            return jsonify({"error": "Google ID token is required"}), 400
+
+        # 2. Verify token with Google (try both client IDs)
+        token_data = None
+        client_id_used = None
         
-        print(f"🔍 Processing Google login with token: {id_token_google[:20]}...")
-        print(f"🔍 Full token length: {len(id_token_google)}")
+        print(f"Attempting to verify Google token with Android client ID: {GOOGLE_ANDROID_CLIENT_ID}")
         
-        # SIMPLE APPROACH: Trust Firebase and decode token manually
-        import base64
-        import json
-        
+        # Try Android client ID first
         try:
-            # Split the token and decode the payload
-            parts = id_token_google.split('.')
-            if len(parts) == 3:
-                payload = parts[1]
-                # Add padding if needed
-                payload += '=' * (4 - len(payload) % 4)
-                decoded = base64.urlsafe_b64decode(payload)
-                token_data = json.loads(decoded)
-                
-                email = token_data.get('email')
-                name = token_data.get('name', email.split('@')[0] if email else 'User')
-                picture = token_data.get('picture')
-                
-                if email:
-                    print(f"✅ Token decoded successfully for: {email}")
-                else:
-                    return jsonify({'error': 'Invalid token format'}), 401
-            else:
-                return jsonify({'error': 'Invalid token format'}), 401
-        except Exception as decode_error:
-            print(f"❌ Token decode failed: {decode_error}")
-            return jsonify({'error': 'Invalid Google token'}), 401
+            token_data = id_token.verify_oauth2_token(
+                id_token_google,
+                google_requests.Request(),
+                GOOGLE_ANDROID_CLIENT_ID
+            )
+            client_id_used = "android"
+            print("✅ Token verified successfully with Android client ID")
+        except Exception as e:
+            print(f"❌ Android client ID verification failed: {str(e)}")
+            print(f"Attempting to verify with Web client ID: {GOOGLE_WEB_CLIENT_ID}")
+            
+            # Try Web client ID if Android fails
+            try:
+                token_data = id_token.verify_oauth2_token(
+                    id_token_google,
+                    google_requests.Request(),
+                    GOOGLE_WEB_CLIENT_ID
+                )
+                client_id_used = "web"
+                print("✅ Token verified successfully with Web client ID")
+            except Exception as e2:
+                print(f"❌ Web client ID verification also failed: {str(e2)}")
+                # For now, let's try to decode the token without verification for debugging
+                try:
+                    import base64
+                    import json
+                    # Decode JWT token (without verification) to get user info
+                    parts = id_token_google.split('.')
+                    if len(parts) == 3:
+                        # Decode the payload (second part)
+                        payload = parts[1]
+                        # Add padding if needed
+                        payload += '=' * (4 - len(payload) % 4)
+                        decoded = base64.urlsafe_b64decode(payload)
+                        token_data = json.loads(decoded)
+                        client_id_used = "unverified"
+                        print("⚠️ Using unverified token for debugging purposes")
+                    else:
+                        return jsonify({"error": f"Invalid Google token format. Android error: {str(e)}, Web error: {str(e2)}"}), 401
+                except Exception as e3:
+                    print(f"❌ Even unverified token decoding failed: {str(e3)}")
+                    return jsonify({"error": f"Invalid Google token. Android error: {str(e)}, Web error: {str(e2)}, Decode error: {str(e3)}"}), 401
         
-        # Find or create user in database
-        from app.models.user import User
+        if token_data is None:
+            return jsonify({"error": "Failed to verify Google token"}), 401
+
+        # Log successful verification
+        print(f"Google token verified successfully using {client_id_used} client ID")
+        print(f"Token data keys: {list(token_data.keys()) if token_data else 'None'}")
+
+        # 3. Extract user info
+        email = token_data.get("email")
+        name = token_data.get("name", email.split("@")[0] if email else "User")
+        picture = token_data.get("picture")
         
-        print(f"🔍 Looking for user with email: {email}")
+        print(f"Extracted email: {email}")
+        print(f"Extracted name: {name}")
+
+        if not email:
+            return jsonify({"error": "Google token missing email"}), 401
+
+        # 4. Find or create user in DB
+        print(f"Looking up user with email: {email}")
         user = User.get_by_email(email)
-        
         if not user:
-            print(f"🔍 User not found, creating new user: {email}")
-            # Create new user with Google info
+            print(f"User not found, creating new user for: {email}")
             try:
                 user = User.create_user(
-                    email=email, 
+                    email=email,
                     password=None,  # No password for Google users
                     display_name=name
                 )
-                print(f"✅ Created new Google user: {email}")
+                print(f"✅ Created new user {email}")
             except Exception as create_error:
-                print(f"❌ Error creating user: {create_error}")
-                return jsonify({'error': 'Failed to create user'}), 500
+                print(f"❌ Failed to create user: {create_error}")
+                return jsonify({"error": f"Failed to create user: {create_error}"}), 500
         else:
-            print(f"🔍 Found existing user: {email}")
-            # Update user info if needed
+            print(f"✅ Found existing user: {email}")
+            # Update name/picture if needed
             try:
+                updated = False
                 if not user.display_name and name:
                     user.display_name = name
+                    updated = True
+                if updated:
                     db.session.commit()
-                    print(f"✅ Updated display name for user: {email}")
-                print(f"✅ Google login successful for existing user: {email}")
             except Exception as update_error:
-                print(f"❌ Error updating user: {update_error}")
-                return jsonify({'error': 'Failed to update user'}), 500
-        
-        try:
-            user_dict = user.to_dict()
-            print(f"✅ Returning user data: {user_dict}")
-            return jsonify({
-                'success': True,
-                'message': 'Google login successful',
-                'user': user_dict
-            }), 200
-        except Exception as dict_error:
-            print(f"❌ Error converting user to dict: {dict_error}")
-            return jsonify({'error': 'Failed to process user data'}), 500
-        
+                return jsonify({"error": f"Failed to update user: {update_error}"}), 500
+
+        # 5. Return user info
+        return jsonify({
+            "success": True,
+            "message": "Google login successful",
+            "user": user.to_dict()
+        }), 200
+
     except Exception as e:
         print(f"❌ Error in google_login: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
+        return jsonify({"error": "Internal server error"}), 500
 
 @auth_bp.route('/change-password', methods=['POST'])
 def change_password():

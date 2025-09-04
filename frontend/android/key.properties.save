@@ -1,0 +1,4 @@
+storePassword=your-store-password
+keyPassword=Die-Heizung-858
+keyAlias=my-key-alias
+storeFile=app/my-key.jks

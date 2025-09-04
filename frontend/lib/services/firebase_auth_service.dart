@@ -2,10 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
+import 'package:master_yourself_ai/services/oauth_debug_config.dart';
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
+  final GoogleSignIn? _googleSignIn = kIsWeb 
+    ? null 
+    : GoogleSignIn(
+        scopes: ['email', 'profile', 'openid'],
+        serverClientId: OAuthDebugConfig.webClientId, // Use web client ID as server client ID
+      );
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -68,25 +74,39 @@ class FirebaseAuthService {
   }
 
   // Sign in with Google
-  Future<UserCredential?> signInWithGoogle() async {
+  Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {
+      print("🔍 Starting Google Sign-In process...");
+      print("🔍 Platform: ${kIsWeb ? 'Web' : 'Mobile'}");
+      
       if (kIsWeb) {
         // For web, use Firebase Auth's built-in Google provider
         GoogleAuthProvider googleProvider = GoogleAuthProvider();
         googleProvider.addScope('email');
         googleProvider.addScope('profile');
+        googleProvider.addScope('openid');
         googleProvider.setCustomParameters({
-          'prompt': 'select_account'
+          'prompt': 'select_account',
+          'client_id': OAuthDebugConfig.webClientId,
         });
         
-        return await _auth.signInWithPopup(googleProvider);
+        final userCredential = await _auth.signInWithPopup(googleProvider);
+        return {
+          'userCredential': userCredential,
+          'googleIdToken': null, // Web doesn't provide Google ID token directly
+        };
       } else {
         // For mobile, use Google Sign-In plugin
         if (_googleSignIn == null) {
           throw Exception('Google Sign-In is not available on this platform.');
         }
         
+        print("🔍 GoogleSignIn instance created successfully");
+        print("🔍 Available scopes: ${OAuthDebugConfig.googleScopes}");
+        print("🔍 Server client ID: ${OAuthDebugConfig.webClientId}");
+        
         // Trigger the authentication flow
+        print("🔍 Starting Google Sign-In flow...");
         final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
         
         if (googleUser == null) {
@@ -94,16 +114,55 @@ class FirebaseAuthService {
         }
 
         // Obtain the auth details from the request
+        print("🔍 Getting authentication details...");
+        print("🔍 Google user email: ${googleUser.email}");
+        print("🔍 Google user ID: ${googleUser.id}");
+        
         final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        
+        print("🔍 Access token: ${googleAuth.accessToken != null ? 'Present' : 'Missing'}");
+        print("🔍 ID token: ${googleAuth.idToken != null ? 'Present' : 'Missing'}");
+        
+        if (googleAuth.idToken == null) {
+          print("❌ No ID token received. This usually means:");
+          print("   1. Server client ID is incorrect");
+          print("   2. SHA-1 fingerprint is not added to Firebase");
+          print("   3. Google Sign-In configuration is wrong");
+          throw Exception('Google Sign-In failed: No ID token received');
+        }
 
         // Create a new credential
+        print("🔍 Creating Firebase credential...");
+        print("🔍 Access token length: ${googleAuth.accessToken?.length ?? 0}");
+        print("🔍 ID token length: ${googleAuth.idToken?.length ?? 0}");
+        
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
 
-        // Once signed in, return the UserCredential
-        return await _auth.signInWithCredential(credential);
+        // Try to sign in with Firebase credential
+        print("🔍 Signing in with Firebase credential...");
+        try {
+          final userCredential = await _auth.signInWithCredential(credential);
+          print("✅ Firebase authentication successful");
+          
+          return {
+            'userCredential': userCredential,
+            'googleIdToken': googleAuth.idToken,
+          };
+        } catch (firebaseError) {
+          print("❌ Firebase authentication failed: $firebaseError");
+          print("🔍 Attempting to proceed with Google ID token only...");
+          
+          // If Firebase fails, we can still return the Google ID token
+          // The app can handle authentication through the backend
+          return {
+            'userCredential': null,
+            'googleIdToken': googleAuth.idToken,
+            'googleUser': googleUser,
+          };
+        }
       }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
