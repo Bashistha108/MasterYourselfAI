@@ -11,6 +11,7 @@ class FirebaseAuthService {
     : GoogleSignIn(
         scopes: ['email', 'profile', 'openid'],
         serverClientId: OAuthDebugConfig.webClientId, // Use web client ID as server client ID
+        forceCodeForRefreshToken: true, // Force account selection
       );
 
   // Get current user
@@ -104,6 +105,19 @@ class FirebaseAuthService {
         print("🔍 GoogleSignIn instance created successfully");
         print("🔍 Available scopes: ${OAuthDebugConfig.googleScopes}");
         print("🔍 Server client ID: ${OAuthDebugConfig.webClientId}");
+        
+        // Force sign out first to ensure account selection
+        print("🔍 Signing out any existing Google account to force selection...");
+        await _googleSignIn!.signOut();
+        
+        // Clear any cached authentication (optional, may fail if no connection exists)
+        print("🔍 Clearing cached authentication...");
+        try {
+          await _googleSignIn!.disconnect();
+          print("✅ Successfully disconnected from Google");
+        } catch (e) {
+          print("ℹ️ No existing connection to disconnect: $e");
+        }
         
         // Trigger the authentication flow
         print("🔍 Starting Google Sign-In flow...");
