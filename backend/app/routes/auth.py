@@ -547,6 +547,10 @@ def google_login():
         data = request.get_json()
         id_token_google = data.get("idToken")
 
+        print(f"🔍 Received Google login request")
+        print(f"🔍 ID token present: {id_token_google is not None}")
+        print(f"🔍 ID token length: {len(id_token_google) if id_token_google else 0}")
+
         if not id_token_google:
             return jsonify({"error": "Google ID token is required"}), 400
 
