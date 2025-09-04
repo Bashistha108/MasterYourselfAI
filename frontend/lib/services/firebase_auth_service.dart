@@ -2,10 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart';
+import 'package:master_yourself_ai/services/oauth_debug_config.dart';
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
+  final GoogleSignIn? _googleSignIn = kIsWeb 
+    ? null 
+    : GoogleSignIn(
+        clientId: OAuthDebugConfig.androidClientId,
+        scopes: OAuthDebugConfig.googleScopes,
+      );
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -75,8 +81,10 @@ class FirebaseAuthService {
         GoogleAuthProvider googleProvider = GoogleAuthProvider();
         googleProvider.addScope('email');
         googleProvider.addScope('profile');
+        googleProvider.addScope('openid');
         googleProvider.setCustomParameters({
-          'prompt': 'select_account'
+          'prompt': 'select_account',
+          'client_id': OAuthDebugConfig.webClientId,
         });
         
         return await _auth.signInWithPopup(googleProvider);

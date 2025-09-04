@@ -20,6 +20,8 @@ from app.models.user import ResetToken
 load_dotenv()
 
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_ANDROID_CLIENT_ID = os.getenv('GOOGLE_ANDROID_CLIENT_ID', '259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com')
+GOOGLE_WEB_CLIENT_ID = os.getenv('GOOGLE_WEB_CLIENT_ID', '259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com')
 
 def generate_reset_token():
     """Generate a secure reset token"""
@@ -548,15 +550,35 @@ def google_login():
         if not id_token_google:
             return jsonify({"error": "Google ID token is required"}), 400
 
-        # 2. Verify token with Google
+        # 2. Verify token with Google (try both client IDs)
+        token_data = None
+        client_id_used = None
+        
+        # Try Android client ID first
         try:
             token_data = id_token.verify_oauth2_token(
                 id_token_google,
                 requests.Request(),
-                GOOGLE_CLIENT_ID
+                GOOGLE_ANDROID_CLIENT_ID
             )
-        except ValueError as e:
-            return jsonify({"error": f"Invalid Google token: {str(e)}"}), 401
+            client_id_used = "android"
+        except ValueError:
+            # Try Web client ID if Android fails
+            try:
+                token_data = id_token.verify_oauth2_token(
+                    id_token_google,
+                    requests.Request(),
+                    GOOGLE_WEB_CLIENT_ID
+                )
+                client_id_used = "web"
+            except ValueError as e:
+                return jsonify({"error": f"Invalid Google token: {str(e)}"}), 401
+        
+        if token_data is None:
+            return jsonify({"error": "Failed to verify Google token"}), 401
+
+        # Log successful verification
+        print(f"Google token verified successfully using {client_id_used} client ID")
 
         # 3. Extract user info
         email = token_data.get("email")

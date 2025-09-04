@@ -48,6 +48,7 @@ class DefaultFirebaseOptions {
     authDomain: 'masteryourselfai-50d2c.firebaseapp.com',
     storageBucket: 'masteryourselfai-50d2c.firebasestorage.app',
     measurementId: 'G-LP2ZCM9YQN',
+    clientId: '259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
