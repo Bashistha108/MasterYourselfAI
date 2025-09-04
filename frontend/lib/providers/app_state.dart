@@ -15,6 +15,7 @@ import 'package:master_yourself_ai/services/api_service.dart';
 import 'package:master_yourself_ai/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppState extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -78,6 +79,55 @@ class AppState extends ChangeNotifier {
   String? get userEmail => _userEmail;
   String? get userName => _userName;
   String? get userProfilePicture => _userProfilePicture;
+
+  // Persistent authentication methods
+  Future<void> _saveAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isAuthenticated', _isAuthenticated);
+      await prefs.setString('userEmail', _userEmail ?? '');
+      await prefs.setString('userName', _userName ?? '');
+      await prefs.setString('userProfilePicture', _userProfilePicture ?? '');
+      print('💾 Auth state saved to local storage');
+    } catch (e) {
+      print('❌ Error saving auth state: $e');
+    }
+  }
+
+  Future<void> _loadAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isAuth = prefs.getBool('isAuthenticated') ?? false;
+      final email = prefs.getString('userEmail') ?? '';
+      final name = prefs.getString('userName') ?? '';
+      final picture = prefs.getString('userProfilePicture') ?? '';
+      
+      if (isAuth && email.isNotEmpty) {
+        _isAuthenticated = true;
+        _userEmail = email;
+        _userName = name.isEmpty ? null : name;
+        _userProfilePicture = picture.isEmpty ? null : picture;
+        print('💾 Auth state loaded from local storage: $email');
+      } else {
+        print('💾 No valid auth state found in local storage');
+      }
+    } catch (e) {
+      print('❌ Error loading auth state: $e');
+    }
+  }
+
+  Future<void> _clearAuthState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('isAuthenticated');
+      await prefs.remove('userEmail');
+      await prefs.remove('userName');
+      await prefs.remove('userProfilePicture');
+      print('💾 Auth state cleared from local storage');
+    } catch (e) {
+      print('❌ Error clearing auth state: $e');
+    }
+  }
   
   // Initialize app data
   Future<void> initializeApp() async {
@@ -1009,6 +1059,9 @@ class AppState extends ChangeNotifier {
         _userName = response['user']?['display_name'] ?? email.split('@')[0];
         _userProfilePicture = null; // Flask backend doesn't have profile pictures
         
+        // Save auth state to local storage
+        await _saveAuthState();
+        
         notifyListeners();
         return true;
       } else {
@@ -1063,6 +1116,9 @@ class AppState extends ChangeNotifier {
             _userProfilePicture = googleUser.photoUrl;
           }
           
+          // Save auth state to local storage
+          await _saveAuthState();
+              
           print("✅ Google login successful for: $_userEmail");
           notifyListeners();
           return true;
@@ -1108,6 +1164,9 @@ class AppState extends ChangeNotifier {
         _userEmail = email;
         _userName = name;
         
+        // Save auth state to local storage
+        await _saveAuthState();
+        
         notifyListeners();
         return true;
       } else {
@@ -1132,6 +1191,9 @@ class AppState extends ChangeNotifier {
       _userName = null;
       _userProfilePicture = null;
       
+      // Clear auth state from local storage
+      await _clearAuthState();
+      
       // Clear all user data
       _weeklyGoals.clear();
       _longTermGoals.clear();
@@ -1155,6 +1217,21 @@ class AppState extends ChangeNotifier {
     try {
       print('🔍 Starting auth state check...');
       
+      // First, try to load from local storage
+      await _loadAuthState();
+      
+      if (_isAuthenticated && _userEmail != null) {
+        print('🔍 Found persistent auth state, initializing app...');
+        // Initialize app data when authenticated
+        await initializeApp();
+        _isCheckingAuth = false;
+        notifyListeners();
+        return;
+      }
+      
+      // If no persistent auth state, check Firebase (for backward compatibility)
+      print('🔍 No persistent auth state, checking Firebase...');
+      
       // Set up auth state listener
       _authService.authStateChanges.listen((User? user) {
         print('🔍 Auth state changed: ${user?.email ?? 'null'}');
@@ -1164,6 +1241,9 @@ class AppState extends ChangeNotifier {
           _userName = user.displayName ?? user.email?.split('@')[0];
           _userProfilePicture = user.photoURL;
           
+          // Save to local storage
+          _saveAuthState();
+          
           // Initialize app data when authenticated
           initializeApp();
         } else {
@@ -1171,6 +1251,9 @@ class AppState extends ChangeNotifier {
           _userEmail = null;
           _userName = null;
           _userProfilePicture = null;
+          
+          // Clear local storage
+          _clearAuthState();
         }
         _isCheckingAuth = false;
         notifyListeners();
@@ -1186,6 +1269,9 @@ class AppState extends ChangeNotifier {
         _userName = currentUser.displayName ?? currentUser.email?.split('@')[0];
         _userProfilePicture = currentUser.photoURL;
         
+        // Save to local storage
+        await _saveAuthState();
+        
         // Initialize app data when authenticated
         await initializeApp();
       } else {
@@ -1193,10 +1279,14 @@ class AppState extends ChangeNotifier {
         _userEmail = null;
         _userName = null;
         _userProfilePicture = null;
+        
+        // Clear local storage
+        await _clearAuthState();
       }
     } catch (e) {
       print('❌ Error checking auth state: $e');
       _isAuthenticated = false;
+      await _clearAuthState();
     } finally {
       _isCheckingAuth = false; // Done checking auth
       print('🔍 Auth state check completed. Authenticated: $_isAuthenticated');
