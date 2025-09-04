@@ -14,6 +14,7 @@ import 'package:master_yourself_ai/models/email.dart';
 import 'package:master_yourself_ai/services/api_service.dart';
 import 'package:master_yourself_ai/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AppState extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -1030,49 +1031,54 @@ class AppState extends ChangeNotifier {
       // Get Google ID token from Firebase
       Map<String, dynamic>? result = await _authService.signInWithGoogle();
       
-      if (result != null && result['userCredential'] != null) {
-        UserCredential userCredential = result['userCredential'];
+      if (result != null && result['googleIdToken'] != null) {
+        UserCredential? userCredential = result['userCredential'];
         String? googleIdToken = result['googleIdToken'];
+        GoogleSignInAccount? googleUser = result['googleUser'];
         
-        if (userCredential.user != null) {
-          print("✅ Firebase Google sign-in successful for: ${userCredential.user!.email}");
+        print("✅ Got Google ID token from Google Sign-In");
+        
+        if (userCredential?.user != null) {
+          print("✅ Firebase Google sign-in successful for: ${userCredential!.user!.email}");
+        } else if (googleUser != null) {
+          print("✅ Google Sign-In successful for: ${googleUser.email} (Firebase auth failed)");
+        }
+        
+        // Send ID token to Flask backend
+        final response = await _apiService.googleLogin(googleIdToken!);
+        print("🔄 Backend response: $response");
+        
+        if (response['success'] == true) {
+          _isAuthenticated = true;
+          _isCheckingAuth = false;
           
-          if (googleIdToken != null) {
-            print("✅ Got Google ID token from Google Sign-In");
-            
-            // Send ID token to Flask backend
-            final response = await _apiService.googleLogin(googleIdToken);
-            print("🔄 Backend response: $response");
-            
-            if (response['success'] == true) {
-              _isAuthenticated = true;
-              _isCheckingAuth = false;
-              _userEmail = userCredential.user!.email;
-              _userName = response['user']?['display_name'] ?? userCredential.user!.displayName ?? userCredential.user!.email?.split('@')[0];
-              _userProfilePicture = userCredential.user!.photoURL;
-              
-              print("✅ Google login successful for: $_userEmail");
-              notifyListeners();
-              return true;
-            } else {
-              print("❌ Backend login failed: ${response['error'] ?? 'Unknown error'}");
-              // Sign out from Firebase if backend login failed
-              await _authService.signOut();
-              setError('Google login failed: ${response['error'] ?? 'Unknown error'}');
-              return false;
-            }
-          } else {
-            print("❌ Failed to get Google ID token");
-            await _authService.signOut();
-            setError('Failed to get Google ID token');
-            return false;
+          // Get user info from Firebase if available, otherwise from Google
+          if (userCredential?.user != null) {
+            _userEmail = userCredential!.user!.email;
+            _userName = response['user']?['display_name'] ?? userCredential.user!.displayName ?? userCredential.user!.email?.split('@')[0];
+            _userProfilePicture = userCredential.user!.photoURL;
+          } else if (googleUser != null) {
+            _userEmail = googleUser.email;
+            _userName = response['user']?['display_name'] ?? googleUser.displayName ?? googleUser.email.split('@')[0];
+            _userProfilePicture = googleUser.photoUrl;
           }
+          
+          print("✅ Google login successful for: $_userEmail");
+          notifyListeners();
+          return true;
         } else {
-          print("❌ Firebase Google sign-in failed");
+          print("❌ Backend login failed: ${response['error'] ?? 'Unknown error'}");
+          // Sign out from Firebase if backend login failed
+          try {
+            await _authService.signOut();
+          } catch (e) {
+            print("⚠️ Error signing out: $e");
+          }
+          setError('Google login failed: ${response['error'] ?? 'Unknown error'}');
           return false;
         }
       } else {
-        print("❌ No result from Google Sign-In");
+        print("❌ No Google ID token received");
         return false;
       }
     } catch (e) {

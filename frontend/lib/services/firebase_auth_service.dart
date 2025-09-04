@@ -133,25 +133,36 @@ class FirebaseAuthService {
 
         // Create a new credential
         print("🔍 Creating Firebase credential...");
+        print("🔍 Access token length: ${googleAuth.accessToken?.length ?? 0}");
+        print("🔍 ID token length: ${googleAuth.idToken?.length ?? 0}");
+        
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
 
-        // Once signed in, return the UserCredential
+        // Try to sign in with Firebase credential
         print("🔍 Signing in with Firebase credential...");
-        final userCredential = await _auth.signInWithCredential(credential);
-        
-        // Store the Google ID token in the credential for later use
-        if (userCredential.credential != null) {
-          print("🔍 Storing Google ID token in credential");
-          // The credential should already contain the Google ID token
+        try {
+          final userCredential = await _auth.signInWithCredential(credential);
+          print("✅ Firebase authentication successful");
+          
+          return {
+            'userCredential': userCredential,
+            'googleIdToken': googleAuth.idToken,
+          };
+        } catch (firebaseError) {
+          print("❌ Firebase authentication failed: $firebaseError");
+          print("🔍 Attempting to proceed with Google ID token only...");
+          
+          // If Firebase fails, we can still return the Google ID token
+          // The app can handle authentication through the backend
+          return {
+            'userCredential': null,
+            'googleIdToken': googleAuth.idToken,
+            'googleUser': googleUser,
+          };
         }
-        
-        return {
-          'userCredential': userCredential,
-          'googleIdToken': googleAuth.idToken,
-        };
       }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
