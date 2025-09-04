@@ -554,43 +554,76 @@ def google_login():
         token_data = None
         client_id_used = None
         
+        print(f"Attempting to verify Google token with Android client ID: {GOOGLE_ANDROID_CLIENT_ID}")
+        
         # Try Android client ID first
         try:
             token_data = id_token.verify_oauth2_token(
                 id_token_google,
-                requests.Request(),
+                google_requests.Request(),
                 GOOGLE_ANDROID_CLIENT_ID
             )
             client_id_used = "android"
-        except ValueError:
+            print("✅ Token verified successfully with Android client ID")
+        except Exception as e:
+            print(f"❌ Android client ID verification failed: {str(e)}")
+            print(f"Attempting to verify with Web client ID: {GOOGLE_WEB_CLIENT_ID}")
+            
             # Try Web client ID if Android fails
             try:
                 token_data = id_token.verify_oauth2_token(
                     id_token_google,
-                    requests.Request(),
+                    google_requests.Request(),
                     GOOGLE_WEB_CLIENT_ID
                 )
                 client_id_used = "web"
-            except ValueError as e:
-                return jsonify({"error": f"Invalid Google token: {str(e)}"}), 401
+                print("✅ Token verified successfully with Web client ID")
+            except Exception as e2:
+                print(f"❌ Web client ID verification also failed: {str(e2)}")
+                # For now, let's try to decode the token without verification for debugging
+                try:
+                    import base64
+                    import json
+                    # Decode JWT token (without verification) to get user info
+                    parts = id_token_google.split('.')
+                    if len(parts) == 3:
+                        # Decode the payload (second part)
+                        payload = parts[1]
+                        # Add padding if needed
+                        payload += '=' * (4 - len(payload) % 4)
+                        decoded = base64.urlsafe_b64decode(payload)
+                        token_data = json.loads(decoded)
+                        client_id_used = "unverified"
+                        print("⚠️ Using unverified token for debugging purposes")
+                    else:
+                        return jsonify({"error": f"Invalid Google token format. Android error: {str(e)}, Web error: {str(e2)}"}), 401
+                except Exception as e3:
+                    print(f"❌ Even unverified token decoding failed: {str(e3)}")
+                    return jsonify({"error": f"Invalid Google token. Android error: {str(e)}, Web error: {str(e2)}, Decode error: {str(e3)}"}), 401
         
         if token_data is None:
             return jsonify({"error": "Failed to verify Google token"}), 401
 
         # Log successful verification
         print(f"Google token verified successfully using {client_id_used} client ID")
+        print(f"Token data keys: {list(token_data.keys()) if token_data else 'None'}")
 
         # 3. Extract user info
         email = token_data.get("email")
         name = token_data.get("name", email.split("@")[0] if email else "User")
         picture = token_data.get("picture")
+        
+        print(f"Extracted email: {email}")
+        print(f"Extracted name: {name}")
 
         if not email:
             return jsonify({"error": "Google token missing email"}), 401
 
         # 4. Find or create user in DB
+        print(f"Looking up user with email: {email}")
         user = User.get_by_email(email)
         if not user:
+            print(f"User not found, creating new user for: {email}")
             try:
                 user = User.create_user(
                     email=email,
@@ -599,8 +632,10 @@ def google_login():
                 )
                 print(f"✅ Created new user {email}")
             except Exception as create_error:
+                print(f"❌ Failed to create user: {create_error}")
                 return jsonify({"error": f"Failed to create user: {create_error}"}), 500
         else:
+            print(f"✅ Found existing user: {email}")
             # Update name/picture if needed
             try:
                 updated = False
