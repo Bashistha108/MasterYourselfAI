@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1004680248723",
-    "project_id": "masteryourselfai-50d2c",
-    "storage_bucket": "masteryourselfai-50d2c.firebasestorage.app"
+    "project_number": "259990462224",
+    "project_id": "masteryourselfai",
+    "storage_bucket": "masteryourselfai.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1004680248723:android:6a85ed282cb3426dd5fc66",
+        "mobilesdk_app_id": "1:259990462224:android:12e7a387780aa6fae88f95",
         "android_client_info": {
           "package_name": "com.masteryourself.ai.master_yourself_ai"
         }
@@ -15,7 +15,11 @@
       "oauth_client": [
         {
           "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
-          "client_type": 3
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.masteryourself.ai.master_yourself_ai",
+            "certificate_hash": "83aba5a0c1de4731470555c111ab5988144c546a"
+          }
         },
         {
           "client_id": "259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com",
@@ -24,7 +28,7 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCcstQeICnVar_u9jIc-MNz_oDjV6DFZzw"
+          "current_key": "AIzaSyBifRL7NKOex0baqFrObvc3OqGag1AYFg0"
         }
       ],
       "services": {
@@ -33,13 +37,6 @@
             {
               "client_id": "259990462224-a8ucu2j2685gdhophefnjb07sm7t8jgg.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "259990462224-iantg8g8nna30rco5fjq9pvsntcikq7q.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.masteryourself.ai.masterYourselfAi"
-              }
             }
           ]
         }
