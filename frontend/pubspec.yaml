@@ -2,7 +2,7 @@ name: master_yourself_ai
 description: A cross-platform mobile app for personal development with AI-powered challenges and goal tracking.
 publish_to: 'none'
 
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: '^3.9.0'
